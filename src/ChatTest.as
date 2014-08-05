@@ -57,6 +57,7 @@ package
 		
 		
 		private var loginui:Window;
+		private var loginmask:Sprite = new Sprite;
 		private var myname:String;
 		private var mynameBtn:PushButton;
 		private var mynameinput:InputText;
@@ -99,6 +100,9 @@ package
 			vbox = new VBox(hbox);
 			list = new VBox(vbox);
 			
+			loginmask.graphics.beginFill(0, .5);
+			loginmask.graphics.drawRect(0, 0, 10000, 10000);
+			wrapper.addChild(loginmask);
 			loginui = new Window(wrapper, 100, 100, "登陆");
 			vbox = new VBox(loginui, 5, 5);
 			mynameinput= new InputText(vbox,0,0,"test"+int(Math.random()*100));
@@ -261,6 +265,8 @@ package
 				gs.addIPMulticastAddress("225.225.0.1:30303");
 				group = new NetGroup(conn, gs.groupspecWithAuthorizations());
 				group.addEventListener(NetStatusEvent.NET_STATUS, conn_netStatus);
+			}else if (e.info.code=="NetGroup.Connect.Success") {
+				loginmask.graphics.clear();
 			}else if (e.info.code=="NetGroup.Posting.Notify") {
 				receive(e);
 			}else if (e.info.code == "NetGroup.SendTo.Notify") {
