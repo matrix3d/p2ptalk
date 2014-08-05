@@ -15,6 +15,7 @@ package
 	import flash.events.Event;
 	import flash.events.KeyboardEvent;
 	import flash.events.MouseEvent;
+	import flash.filters.GlowFilter;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.ui.Keyboard;
@@ -31,6 +32,7 @@ package
 		static private var log:Function;
 		static private var stage:Stage;
 		static private var downPos:Point;
+		private static var drawPanel:Sprite = new Sprite;
 		public function ScrTool() 
 		{
 			
@@ -56,9 +58,14 @@ package
 					scrWin.stage.scaleMode = StageScaleMode.NO_SCALE;
 					scrWin.stage.addChild(scrImageWrapper);
 					scrImageWrapper.addChild(scrImage);
-					scrImageWrapper.addEventListener(MouseEvent.MOUSE_DOWN, scrImageWrapper_mouseDown);
+					scrWin.stage.addEventListener(MouseEvent.MOUSE_DOWN, scrImageWrapper_mouseDown);
+					scrWin.stage.addEventListener(MouseEvent.MOUSE_MOVE, mouseMove);
 					scrWin.stage.addEventListener(MouseEvent.MOUSE_UP, stage_mouseUp);
 					scrWin.addEventListener(Event.CLOSING, scrWin_closing);
+					
+					drawPanel = new Sprite;
+					scrWin.stage.addChild(drawPanel);
+					drawPanel.filters = [new GlowFilter(0xff0000,1,2,2)];
 				}
 				stage.nativeWindow.alwaysInFront = true;
 				scrWin.activate();
@@ -72,6 +79,20 @@ package
 				if (log!=null) {
 					log("先按截屏键 Prt Scr");
 				}
+			}
+			
+		}
+		
+		static private function mouseMove(e:MouseEvent):void 
+		{
+			var nowPos:Point = new Point(scrWin.stage.mouseX, scrWin.stage.mouseY);
+			
+			drawPanel.graphics.clear();
+			drawPanel.graphics.lineStyle(0);
+			drawPanel.graphics.drawCircle(nowPos.x,nowPos.y, 5);
+			if (downPos) {
+				drawPanel.graphics.drawCircle(downPos.x, downPos.y, 5);
+				drawPanel.graphics.drawRect(downPos.x, downPos.y, nowPos.x - downPos.x, nowPos.y - downPos.y);
 			}
 			
 		}

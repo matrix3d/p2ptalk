@@ -87,7 +87,7 @@ package
 			con = new ImageTextArea(vbox);
 			con.editable = false;
 			con.html = true;
-			con.setSize(400, 250);
+			con.setSize(600, 400);
 			input = new TextArea(vbox);
 			input.setSize(400, 100);
 			
@@ -141,7 +141,8 @@ package
 		
 		private function cutScr(e:Event):void {
 			if(CONFIG::air) {
-				ScrTool.startCut(onCutOver,stage,addLine);
+				ScrTool.startCut(onCutOver, stage, addLine);
+				addLine("此功能需要按prt scr截屏键");
 			}else {
 				file = new FileReference();
 				file.addEventListener(Event.SELECT, file_select);
@@ -186,6 +187,7 @@ package
 			msg.time = time;
 			msg.data = data;
 			msg.code = code;
+			if(conn&&conn.connected)
 			msg.sender = conn.nearID;
 			return msg;
 		}
