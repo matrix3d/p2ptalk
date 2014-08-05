@@ -43,7 +43,7 @@ package
 			
 			if (Clipboard.generalClipboard.hasFormat(ClipboardFormats.BITMAP_FORMAT)) {
 				var bmd:BitmapData = Clipboard.generalClipboard.getData(ClipboardFormats.BITMAP_FORMAT) as BitmapData;
-				Clipboard.generalClipboard.clear();
+				//Clipboard.generalClipboard.clear();
 				scrImage.bitmapData = bmd;
 				if (scrWin==null) {
 					var opt:NativeWindowInitOptions = new NativeWindowInitOptions;

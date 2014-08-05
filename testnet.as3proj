@@ -4,7 +4,7 @@
   <output>
     <movie outputType="Application" />
     <movie input="" />
-    <movie path="bin\air\bin\testnet.swf" />
+    <movie path="bin\testnet.swf" />
     <movie fps="30" />
     <movie width="800" />
     <movie height="600" />

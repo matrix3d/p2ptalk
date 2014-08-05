@@ -12,6 +12,7 @@ package
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
 	import flash.display.JPEGEncoderOptions;
+	import flash.display.JPEGXREncoderOptions;
 	import flash.display.Loader;
 	import flash.display.LoaderInfo;
 	import flash.display.NativeMenu;
@@ -21,12 +22,15 @@ package
 	import flash.display.StageScaleMode;
 	import flash.events.ContextMenuEvent;
 	import flash.events.Event;
+	import flash.events.KeyboardEvent;
 	import flash.events.NetStatusEvent;
+	import flash.net.FileReference;
 	import flash.net.GroupSpecifier;
 	import flash.net.NetConnection;
 	import flash.net.NetGroup;
 	import flash.ui.ContextMenu;
 	import flash.ui.ContextMenuItem;
+	import flash.ui.Keyboard;
 	import flash.utils.ByteArray;
 	import flash.utils.Dictionary;
 	/**
@@ -44,7 +48,7 @@ package
 		
 		private var conn:NetConnection;
 		private var group:NetGroup;
-		private var con:TextArea;
+		private var con:ImageTextArea;
 		private var input:TextArea;
 		private var list:VBox;
 		private var users:Array = [];
@@ -56,8 +60,7 @@ package
 		private var myname:String;
 		private var mynameBtn:PushButton;
 		private var mynameinput:InputText;
-		private var sp:ScrollPane;
-		private var imageWrapper:Sprite = new Sprite;
+		private var file:FileReference;
 		public function ChatTest() 
 		{
 			if (stage) 
@@ -81,7 +84,9 @@ package
 			var hbox:HBox = new HBox(wrapper);
 			var vbox:VBox = new VBox(hbox);
 			mynameBtn = new PushButton(vbox);
-			con = new TextArea(vbox);
+			con = new ImageTextArea(vbox);
+			con.editable = false;
+			con.html = true;
 			con.setSize(400, 250);
 			input = new TextArea(vbox);
 			input.setSize(400, 100);
@@ -100,9 +105,16 @@ package
 			new PushButton(vbox, 0, 0, "登陆",loginin);
 			loginui.setSize(200, 200);
 			
-			sp = new ScrollPane(this, 550);
-			sp.setSize(250, 420)
-			sp.addChild(imageWrapper);
+			stage.addEventListener(KeyboardEvent.KEY_UP, stage_keyDown);
+			
+			addLine("open source flash p2p talk tool. https://github.com/matrix3d/p2ptalk");
+		}
+		
+		private function stage_keyDown(e:KeyboardEvent):void 
+		{
+			if (e.keyCode==Keyboard.ENTER&&e.ctrlKey) {
+				post(null);
+			}
 		}
 		
 		private function loginin(e:Event):void {
@@ -122,6 +134,8 @@ package
 				var msg:Object = createMsg(input.text,CODE_TXT);
 				addLine(group.sendToAllNeighbors(msg));
 				input.text = "";
+				
+				receive2("you", msg.time, CODE_TXT, msg.data);
 			}
 		}
 		
@@ -129,20 +143,43 @@ package
 			if(CONFIG::air) {
 				ScrTool.startCut(onCutOver,stage,addLine);
 			}else {
-				addLine("网页版不支持此功能");
+				file = new FileReference();
+				file.addEventListener(Event.SELECT, file_select);
+				file.browse();
 			}
 			
+		}
+		
+		private function file_select(e:Event):void 
+		{
+			var file:FileReference = e.currentTarget as FileReference;
+			file.load();
+			file.addEventListener(Event.COMPLETE, file_complete);
+		}
+		
+		private function file_complete(e:Event):void 
+		{
+			var file:FileReference = e.currentTarget as FileReference;
+			var loader:Loader = new Loader;
+			loader.contentLoaderInfo.addEventListener(Event.COMPLETE, loader_complete_cut);
+			loader.loadBytes(file.data);
+		}
+		
+		private function loader_complete_cut(e:Event):void 
+		{
+			onCutOver(((e.currentTarget as LoaderInfo).content as Bitmap).bitmapData);
 		}
 		
 		private function onCutOver(bmd:BitmapData):void {
 			if (bmd) {
-				var msg:Object = createMsg(bmd.encode(bmd.rect,new JPEGEncoderOptions),CODE_IMAGE);
+				var msg:Object = createMsg(bmd.encode(bmd.rect,new JPEGXREncoderOptions),CODE_IMAGE);
 				addLine(group.sendToAllNeighbors(msg));
+				receive2("you", msg.time, CODE_IMAGE, msg.data);
 			}
 		}
 		
 		private function sendFile(e:Event):void {
-			
+			addLine("该功能暂未开放");
 		}
 		private function createMsg(data:Object,code:int):Object {
 			var msg:Object = { };
@@ -160,19 +197,23 @@ package
 		
 		private function receive(e:NetStatusEvent):void {
 			var e2:NetStatusEvent = getUser(e.info.message.sender);
-			var date:Date = new Date(e.info.message.time);
-			addLine("["+date.toLocaleTimeString()+"] ["+(e2name[e2]||e.info.message.sender)+"] [延迟 " + (time-e.info.message.time)+"]");
-			switch(e.info.message.code) {
+			receive2((e2name[e2] || e.info.message.sender), e.info.message.time, e.info.message.code, e.info.message.data,e2);
+		}
+		
+		private function receive2(name:String, time:Number, code:int, data:Object,e2:NetStatusEvent=null):void {
+			var date:Date = new Date(time);
+			addLine("<font color='#0000FF'>["+date.toLocaleTimeString()+"] ["+name+"] [延迟 " + (this.time-time)+"]</font>");
+			switch(code) {
 				case CODE_TXT:
-					addLine(e.info.message.data+"\n");
+					addLine("<textformat indent='20'><font color='#000000'>"+data+"</font><br></textformat>");
 					break;
 				case CODE_NAME:
-					e2name[e2] = e.info.message.data;
+					e2name[e2] = data;
 					updateUserList();
 					break;
 				case CODE_IMAGE:
 					var loader:Loader = new Loader;
-					loader.loadBytes(e.info.message.data as ByteArray);
+					loader.loadBytes(data as ByteArray);
 					loader.contentLoaderInfo.addEventListener(Event.COMPLETE, loader_complete);
 					break;
 			}
@@ -182,9 +223,7 @@ package
 		{
 			var con:LoaderInfo = e.currentTarget as LoaderInfo;
 			var image:Bitmap = (con.content as Bitmap);
-			image.y = imageWrapper.height + 20;
-			imageWrapper.addChild(image);
-			sp.draw();
+			addImage(image.bitmapData);
 		}
 		
 		private function getUser(peerID:String):NetStatusEvent {
@@ -198,11 +237,15 @@ package
 		}
 		
 		public function addLine(txt:String):void {
-			con.text += txt + "\n";
+			con.text +="<p>"+ txt + "</p>";
 			con.draw();
 			con.textField.scrollV = con.textField.maxScrollV;
 		}
-		
+		public function addImage(bmd:BitmapData):void {
+			con.addImage(new Bitmap(bmd), bmd.width, bmd.height,20);
+			con.draw();
+			con.textField.scrollV = con.textField.maxScrollV;
+		}
 		private function conn_netStatus(e:NetStatusEvent):void 
 		{
 			trace(e.currentTarget);
