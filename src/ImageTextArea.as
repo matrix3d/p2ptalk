@@ -19,22 +19,23 @@ package
 			super(parent, xpos, ypos, text);
 		}
 		
-		public function addImage(dis:DisplayObject,width:Number,height:Number,indent:int=0):void {
-			var line:String ="<p><textformat indent='"+indent+"' leading='"+height+"'>i</textformat></p>";
-			text += line;
-			draw();
+		public function addImage(dis:DisplayObject, width:Number, height:Number, indent:int = 0):void {
+			var numline:int = Math.ceil(height / 12);
 			var part:ImagePart = new ImagePart;
 			part.dis = dis;
-			part.charI = textField.text.length - 2;
+			for (var i:int = 0; i < numline;i++ ) {
+				part.charIs.push(textField.text.length);
+				var line:String ="<p><textformat indent='"+indent+"'> </textformat></p>";
+				text += line;
+				draw();
+			}
 			imageParts.push(part);
 			updateImagePos(part);
-			line ="<p><textformat indent='"+width+"'>i</textformat></p>";
-			text += line;
 		}
 		
 		private function updateImagePos(part:ImagePart):void {
-			var rect:Rectangle = textField.getCharBoundaries(part.charI);
 			var dis:DisplayObject = part.dis;
+			var rect:Rectangle = textField.getCharBoundaries(part.charIs[0]);
 			if (rect) {
 				dis.x = rect.x;
 				dis.y = rect.y + 3;
@@ -42,8 +43,17 @@ package
 					content.addChild(dis);
 				}
 			}else {
-				if (dis.parent) {
-					dis.parent.removeChild(dis);
+				rect = textField.getCharBoundaries(part.charIs[part.charIs.length-1]);
+				if (rect) {
+					dis.x = rect.x;
+					dis.y = rect.y-dis.height + 3;
+					if (dis.parent==null) {
+						content.addChild(dis);
+					}
+				}else{
+					if (dis.parent) {
+						dis.parent.removeChild(dis);
+					}
 				}
 			}
 			
@@ -111,5 +121,5 @@ import flash.display.DisplayObject;
 
 class ImagePart {
 	public var dis:DisplayObject;
-	public var charI:Number;
+	public var charIs:Array=[];
 }

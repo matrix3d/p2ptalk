@@ -90,7 +90,7 @@ package
 			con.html = true;
 			con.setSize(600, 400);
 			input = new TextArea(vbox);
-			input.setSize(400, 100);
+			input.setSize(600, 100);
 			
 			var hbox2:HBox = new HBox(vbox);
 			new PushButton(hbox2, 0, 0, "发送",post);
