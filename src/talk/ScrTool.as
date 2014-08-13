@@ -1,5 +1,4 @@
-package  
-{
+package talk {
 	import flash.desktop.Clipboard;
 	import flash.desktop.ClipboardFormats;
 	import flash.display.Bitmap;

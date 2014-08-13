@@ -42,7 +42,7 @@ package net.proxy {
 			serverSocket.listen();
 			serverSocket.addEventListener(ServerSocketConnectEvent.CONNECT, serverSocket_connect);
 			
-			new ProxyServer2AssetServer();
+			//new ProxyServer2AssetServer();
 		}
 		
 		private function clientSocket_connect(e:ServerSocketConnectEvent):void 

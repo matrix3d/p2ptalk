@@ -1,5 +1,6 @@
-package  
-{
+package talk {
+	import talk.ScrTool;
+	import ui.ImageTextArea;
 	import com.bit101.components.HBox;
 	import com.bit101.components.InputText;
 	import com.bit101.components.List;
@@ -39,29 +40,26 @@ package
 	 */
 	public class ChatTest extends Sprite
 	{
-		private static const CODE_TXT:int = 1;
-		private static const CODE_NAME:int = 2;
-		private static const CODE_IMAGE:int = 3;
-		private static const CODE_FILE:int = 4;
+		public static const CODE_TXT:int = 1;
+		public static const CODE_NAME:int = 2;
+		public static const CODE_IMAGE:int = 3;
+		public static const CODE_FILE:int = 4;
 		
 		private var wrapper:Sprite = new Sprite;
 		
 		private var conn:NetConnection;
-		private var group:NetGroup;
-		private var con:ImageTextArea;
-		private var input:TextArea;
-		private var list:VBox;
+		public var group:NetGroup;
 		private var users:Array = [];
-		private var e2name:Dictionary = new Dictionary;
-		private var item2e:Dictionary = new Dictionary;
+		public var e2name:Dictionary = new Dictionary;
+		public var item2e:Dictionary = new Dictionary;
 		
 		
 		private var loginui:Window;
 		private var loginmask:Sprite = new Sprite;
 		private var myname:String;
-		private var mynameBtn:PushButton;
+		//private var mynameBtn:PushButton;
 		private var mynameinput:InputText;
-		private var file:FileReference;
+		private var tp:TalkPanel;
 		public function ChatTest() 
 		{
 			if (stage) 
@@ -82,36 +80,20 @@ package
 			Style.fontSize = 12;
 			addChild(wrapper);
 			
-			var hbox:HBox = new HBox(wrapper);
-			var vbox:VBox = new VBox(hbox);
-			mynameBtn = new PushButton(vbox);
-			con = new ImageTextArea(vbox);
-			con.editable = false;
-			con.html = true;
-			con.setSize(600, 400);
-			input = new TextArea(vbox);
-			input.setSize(600, 100);
-			
-			var hbox2:HBox = new HBox(vbox);
-			new PushButton(hbox2, 0, 0, "发送",post);
-			new PushButton(hbox2, 0, 0, "截图",cutScr);
-			new PushButton(hbox2, 0, 0, "文件",sendFile);
-			
-			vbox = new VBox(hbox);
-			list = new VBox(vbox);
+			tp= new TalkPanel(this,wrapper);
 			
 			loginmask.graphics.beginFill(0, .5);
 			loginmask.graphics.drawRect(0, 0, 10000, 10000);
 			wrapper.addChild(loginmask);
 			loginui = new Window(wrapper, 100, 100, "登陆");
-			vbox = new VBox(loginui, 5, 5);
+			var vbox:VBox = new VBox(loginui, 5, 5);
 			mynameinput= new InputText(vbox,0,0,"test"+int(Math.random()*100));
 			new PushButton(vbox, 0, 0, "登陆",loginin);
 			loginui.setSize(200, 200);
 			
 			stage.addEventListener(KeyboardEvent.KEY_UP, stage_keyDown);
 			
-			addLine("open source flash p2p talk tool. https://github.com/matrix3d/p2ptalk");
+			tp.addLine("open source flash p2p talk tool. https://github.com/matrix3d/p2ptalk");
 		}
 		
 		private function stage_keyDown(e:KeyboardEvent):void 
@@ -123,70 +105,36 @@ package
 		
 		private function loginin(e:Event):void {
 			myname = mynameinput.text;
-			mynameBtn.label = myname;
+			tp.title = myname;
+			//mynameBtn.label = myname;
 			conn = new NetConnection();
 			conn.addEventListener(NetStatusEvent.NET_STATUS, conn_netStatus);
-			//conn.connect("rtmfp:");
-			conn.connect("rtmfp://p2p.rtmfp.net/fe0704d85bec8171e0f35e7a-4e39644da8a0/");
+			conn.connect("rtmfp:");
+			//conn.connect("rtmfp://p2p.rtmfp.net/fe0704d85bec8171e0f35e7a-4e39644da8a0/");
 			if (loginui.parent) {
 				loginui.parent.removeChild(loginui);
 			}
 		}
 		
-		private function post(e:Event):void {
-			if(input.text!=""&&conn){
-				var msg:Object = createMsg(input.text,CODE_TXT);
-				addLine(group.sendToAllNeighbors(msg));
-				input.text = "";
+		public function post(e:Event):void {
+			if(tp.input.text!=""&&conn){
+				var msg:Object = createMsg(tp.input.text,CODE_TXT);
+				tp.addLine(group.sendToAllNeighbors(msg));
+				tp.input.text = "";
 				
 				receive2("you", msg.time, CODE_TXT, msg.data);
 			}
 		}
 		
-		private function cutScr(e:Event):void {
-			if(CONFIG::air) {
-				ScrTool.startCut(onCutOver, stage, addLine);
-				addLine("此功能需要按prt scr截屏键");
-			}else {
-				file = new FileReference();
-				file.addEventListener(Event.SELECT, file_select);
-				file.browse();
-			}
-			
-		}
-		
-		private function file_select(e:Event):void 
-		{
-			var file:FileReference = e.currentTarget as FileReference;
-			file.load();
-			file.addEventListener(Event.COMPLETE, file_complete);
-		}
-		
-		private function file_complete(e:Event):void 
-		{
-			var file:FileReference = e.currentTarget as FileReference;
-			var loader:Loader = new Loader;
-			loader.contentLoaderInfo.addEventListener(Event.COMPLETE, loader_complete_cut);
-			loader.loadBytes(file.data);
-		}
-		
-		private function loader_complete_cut(e:Event):void 
-		{
-			onCutOver(((e.currentTarget as LoaderInfo).content as Bitmap).bitmapData);
-		}
-		
-		private function onCutOver(bmd:BitmapData):void {
+		public function onCutOver(bmd:BitmapData):void {
 			if (bmd) {
 				var msg:Object = createMsg(bmd.encode(bmd.rect,new JPEGXREncoderOptions),CODE_IMAGE);
-				addLine(group.sendToAllNeighbors(msg));
+				tp.addLine(group.sendToAllNeighbors(msg));
 				receive2("you", msg.time, CODE_IMAGE, msg.data);
 			}
 		}
 		
-		private function sendFile(e:Event):void {
-			addLine("该功能暂未开放");
-		}
-		private function createMsg(data:Object,code:int):Object {
+		public function createMsg(data:Object,code:int):Object {
 			var msg:Object = { };
 			msg.time = time;
 			msg.data = data;
@@ -208,14 +156,14 @@ package
 		
 		private function receive2(name:String, time:Number, code:int, data:Object,e2:NetStatusEvent=null):void {
 			var date:Date = new Date(time);
-			addLine("<font color='#0000FF'>["+date.toLocaleTimeString()+"] ["+name+"] [延迟 " + (this.time-time)+"]</font>");
+			tp.addLine("<font color='#0000FF'>["+date.toLocaleTimeString()+"] ["+name+"] [延迟 " + (this.time-time)+"]</font>");
 			switch(code) {
 				case CODE_TXT:
-					addLine("<textformat indent='20'><font color='#000000'>"+data+"</font><br></textformat>");
+					tp.addLine("<textformat indent='20'><font color='#000000'>"+data+"</font><br></textformat>");
 					break;
 				case CODE_NAME:
 					e2name[e2] = data;
-					updateUserList();
+					tp.updateUserList(users);
 					break;
 				case CODE_IMAGE:
 					var loader:Loader = new Loader;
@@ -229,7 +177,7 @@ package
 		{
 			var con:LoaderInfo = e.currentTarget as LoaderInfo;
 			var image:Bitmap = (con.content as Bitmap);
-			addImage(image.bitmapData);
+			tp.addImage(image.bitmapData);
 		}
 		
 		private function getUser(peerID:String):NetStatusEvent {
@@ -242,16 +190,7 @@ package
 			return null;
 		}
 		
-		public function addLine(txt:String):void {
-			con.text +="<p>"+ txt + "</p>";
-			con.draw();
-			con.textField.scrollV = con.textField.maxScrollV;
-		}
-		public function addImage(bmd:BitmapData):void {
-			con.addImage(new Bitmap(bmd), bmd.width, bmd.height,20);
-			con.draw();
-			con.textField.scrollV = con.textField.maxScrollV;
-		}
+		
 		private function conn_netStatus(e:NetStatusEvent):void 
 		{
 			trace(e.currentTarget);
@@ -273,39 +212,22 @@ package
 				receive(e);
 			}else if (e.info.code=="NetGroup.Neighbor.Connect") {
 				users.push(e);
-				updateUserList();
+				tp.updateUserList(users);
 				var nameMsg:Object = createMsg(myname, CODE_NAME);
-				addLine(group.sendToNearest(nameMsg, group.convertPeerIDToGroupAddress(e.info.peerID)));
+				tp.addLine(group.sendToNearest(nameMsg, group.convertPeerIDToGroupAddress(e.info.peerID)));
 			}else if (e.info.code=="NetGroup.Neighbor.Disconnect") {
 				for (var i:int = 0; i < users.length;i++ ) {
 					var e2:NetStatusEvent = users[i];
 					if (e2.info.peerID == e.info.peerID) {
 						users.splice(i, 1);
-						updateUserList();
+						tp.updateUserList(users);
 						break;
 					}
 				}
 			}
 		}
 		
-		private function updateUserList():void {
-			list.removeChildren();
-			for each(var e:NetStatusEvent in users) {
-				var btn:PushButton=new PushButton(list, 0, 0, e2name[e]||e.info.peerID);
-				var menu:ContextMenu = new ContextMenu;
-				var item:ContextMenuItem = new ContextMenuItem("送花");
-				item2e[item] = e;
-				item.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT,item_select)
-				menu.customItems = [item];
-				btn.contextMenu = menu;
-			}
-		}
 		
-		private function item_select(e:Event):void 
-		{
-			var e2:NetStatusEvent = item2e[e.currentTarget] as NetStatusEvent;
-			addLine(group.sendToNearest(createMsg("送你一朵花",CODE_TXT), group.convertPeerIDToGroupAddress(e2.info.peerID)));
-		}
 	}
 
 }

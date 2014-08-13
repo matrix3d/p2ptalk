@@ -42,6 +42,7 @@ package net.socket {
 		{
 			st.bytes.position = 0;
 			var txt:String = st.bytes.readMultiByte(st.bytes.length, "utf-8");
+			trace(txt);
 			var lines:Array = txt.split(/[\r\n]+/);
 			for each(var line:String in lines) {
 				var i:int = line.indexOf(" ");

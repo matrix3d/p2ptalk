@@ -1,5 +1,4 @@
-package  
-{
+package ui {
 	import com.bit101.components.TextArea;
 	import flash.display.DisplayObject;
 	import flash.display.DisplayObjectContainer;
@@ -17,6 +16,7 @@ package
 		private var imageParts:Array = [];
 		public function ImageTextArea(parent:DisplayObjectContainer=null, xpos:Number=0, ypos:Number=0, text:String=""):void {
 			super(parent, xpos, ypos, text);
+			textField.condenseWhite = true;
 		}
 		
 		public function addImage(dis:DisplayObject, width:Number, height:Number, indent:int = 0):void {
@@ -25,7 +25,7 @@ package
 			part.dis = dis;
 			for (var i:int = 0; i < numline;i++ ) {
 				part.charIs.push(textField.text.length);
-				var line:String ="<p><textformat indent='"+indent+"'> </textformat></p>";
+				var line:String ="<p><textformat indent='"+indent+"'>i</textformat></p>";
 				text += line;
 				draw();
 			}
