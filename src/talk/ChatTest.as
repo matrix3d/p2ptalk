@@ -110,7 +110,7 @@ package talk {
 				var user:User = talkPanel2user[tp];
 			}
 			if(tp.input.text!=""&&conn){
-				var msg:Object = createMsg(tp.input.text,CODE_TXT);
+				var msg:Object = createMsg(tp.input.text,CODE_TXT,tp.isGroup);
 				if (tp.isGroup) {
 					tp.addLine(g.sendToAllNeighbors(msg));
 				}else {
@@ -130,7 +130,7 @@ package talk {
 			}
 			var bmd:BitmapData = tp.currentBmd;
 			if (bmd) {
-				var msg:Object = createMsg(bmd.encode(bmd.rect, new JPEGXREncoderOptions), CODE_IMAGE);
+				var msg:Object = createMsg(bmd.encode(bmd.rect, new JPEGXREncoderOptions), CODE_IMAGE,tp.isGroup);
 				if (tp.isGroup) {
 					tp.addLine(g.sendToAllNeighbors(msg));
 				}else {
@@ -140,11 +140,12 @@ package talk {
 			}
 		}
 		
-		public function createMsg(data:Object,code:int):Object {
+		public function createMsg(data:Object,code:int,isGroup:Boolean):Object {
 			var msg:Object = { };
 			msg.time = time;
 			msg.data = data;
 			msg.code = code;
+			msg.isGroup = isGroup;
 			if(conn&&conn.connected)
 			msg.sender = conn.nearID;
 			return msg;
@@ -209,12 +210,12 @@ package talk {
 			}else if (e.info.code=="NetGroup.Posting.Notify") {
 				receive(e,true);
 			}else if (e.info.code == "NetGroup.SendTo.Notify") {
-				receive(e,false);
+				receive(e,e.info.message.isGroup);
 			}else if (e.info.code == "NetGroup.Neighbor.Connect") {
 				talkPanel = group2talkPanel[e.currentTarget];
 				users.push(new User(e.info.peerID));
 				talkPanel.updateUserList(users);
-				var nameMsg:Object = createMsg(myname, CODE_NAME);
+				var nameMsg:Object = createMsg(myname, CODE_NAME,false);
 				talkPanel.addLine(e.currentTarget.sendToNearest(nameMsg, e.currentTarget.convertPeerIDToGroupAddress(e.info.peerID)));
 			}else if (e.info.code == "NetGroup.Neighbor.Disconnect") {
 				talkPanel = group2talkPanel[e.currentTarget];
