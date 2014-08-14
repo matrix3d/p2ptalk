@@ -1,4 +1,5 @@
 package talk {
+	import net.Group;
 	import talk.ScrTool;
 	import ui.ImageTextArea;
 	import com.bit101.components.HBox;
@@ -48,18 +49,16 @@ package talk {
 		private var wrapper:Sprite = new Sprite;
 		
 		private var conn:NetConnection;
-		public var group:NetGroup;
+		public var groups:Array=[];
 		private var users:Array = [];
-		public var e2name:Dictionary = new Dictionary;
-		public var item2e:Dictionary = new Dictionary;
-		
-		
 		private var loginui:Window;
 		private var loginmask:Sprite = new Sprite;
 		private var myname:String;
-		//private var mynameBtn:PushButton;
 		private var mynameinput:InputText;
-		private var tp:TalkPanel;
+		private var group2talkPanel:Dictionary = new Dictionary;
+		private var user2talkPanel:Dictionary = new Dictionary;
+		private var talkPanel2group:Dictionary = new Dictionary;
+		private var talkPanel2user:Dictionary = new Dictionary;
 		public function ChatTest() 
 		{
 			if (stage) 
@@ -80,7 +79,6 @@ package talk {
 			Style.fontSize = 12;
 			addChild(wrapper);
 			
-			tp= new TalkPanel(this,wrapper);
 			
 			loginmask.graphics.beginFill(0, .5);
 			loginmask.graphics.drawRect(0, 0, 10000, 10000);
@@ -91,46 +89,54 @@ package talk {
 			new PushButton(vbox, 0, 0, "登陆",loginin);
 			loginui.setSize(200, 200);
 			
-			stage.addEventListener(KeyboardEvent.KEY_UP, stage_keyDown);
 			
-			tp.addLine("open source flash p2p talk tool. https://github.com/matrix3d/p2ptalk");
-		}
-		
-		private function stage_keyDown(e:KeyboardEvent):void 
-		{
-			if (e.keyCode==Keyboard.ENTER&&e.ctrlKey) {
-				post(null);
-			}
 		}
 		
 		private function loginin(e:Event):void {
 			myname = mynameinput.text;
-			tp.title = myname;
-			//mynameBtn.label = myname;
 			conn = new NetConnection();
 			conn.addEventListener(NetStatusEvent.NET_STATUS, conn_netStatus);
-			conn.connect("rtmfp:");
-			//conn.connect("rtmfp://p2p.rtmfp.net/fe0704d85bec8171e0f35e7a-4e39644da8a0/");
+			//conn.connect("rtmfp:");
+			conn.connect("rtmfp://p2p.rtmfp.net/fe0704d85bec8171e0f35e7a-4e39644da8a0/");
 			if (loginui.parent) {
 				loginui.parent.removeChild(loginui);
 			}
 		}
 		
 		public function post(e:Event):void {
+			var tp:TalkPanel = e.currentTarget as TalkPanel;
+			var g:NetGroup = talkPanel2group[tp];
+			if (!tp.isGroup) {
+				var user:User = talkPanel2user[tp];
+			}
 			if(tp.input.text!=""&&conn){
 				var msg:Object = createMsg(tp.input.text,CODE_TXT);
-				tp.addLine(group.sendToAllNeighbors(msg));
-				tp.input.text = "";
+				if (tp.isGroup) {
+					tp.addLine(g.sendToAllNeighbors(msg));
+				}else {
+					tp.addLine(g.sendToNearest(msg,g.convertPeerIDToGroupAddress(user.peerID)));
+				}
 				
-				receive2("you", msg.time, CODE_TXT, msg.data);
+				tp.input.text = "";
+				tp.receive(users,"you", msg.time, CODE_TXT, msg.data);
 			}
 		}
 		
-		public function onCutOver(bmd:BitmapData):void {
+		public function onCutOver(e:Event):void {
+			var tp:TalkPanel = e.currentTarget as TalkPanel;
+			var g:NetGroup = talkPanel2group[tp];
+			if (!tp.isGroup) {
+				var user:User = talkPanel2user[tp];
+			}
+			var bmd:BitmapData = tp.currentBmd;
 			if (bmd) {
-				var msg:Object = createMsg(bmd.encode(bmd.rect,new JPEGXREncoderOptions),CODE_IMAGE);
-				tp.addLine(group.sendToAllNeighbors(msg));
-				receive2("you", msg.time, CODE_IMAGE, msg.data);
+				var msg:Object = createMsg(bmd.encode(bmd.rect, new JPEGXREncoderOptions), CODE_IMAGE);
+				if (tp.isGroup) {
+					tp.addLine(g.sendToAllNeighbors(msg));
+				}else {
+					tp.addLine(g.sendToNearest(msg, g.convertPeerIDToGroupAddress(user.peerID)));
+				}
+				tp.receive(users,"you", msg.time, CODE_IMAGE, msg.data);
 			}
 		}
 		
@@ -144,46 +150,33 @@ package talk {
 			return msg;
 		}
 		
-		private function get time():Number {
+		public static function get time():Number {
 			var data:Date = new Date;
 			return data.time;
 		}
 		
-		private function receive(e:NetStatusEvent):void {
-			var e2:NetStatusEvent = getUser(e.info.message.sender);
-			receive2((e2name[e2] || e.info.message.sender), e.info.message.time, e.info.message.code, e.info.message.data,e2);
-		}
-		
-		private function receive2(name:String, time:Number, code:int, data:Object,e2:NetStatusEvent=null):void {
-			var date:Date = new Date(time);
-			tp.addLine("<font color='#0000FF'>["+date.toLocaleTimeString()+"] ["+name+"] [延迟 " + (this.time-time)+"]</font>");
-			switch(code) {
-				case CODE_TXT:
-					tp.addLine("<textformat indent='20'><font color='#000000'>"+data+"</font><br></textformat>");
-					break;
-				case CODE_NAME:
-					e2name[e2] = data;
-					tp.updateUserList(users);
-					break;
-				case CODE_IMAGE:
-					var loader:Loader = new Loader;
-					loader.loadBytes(data as ByteArray);
-					loader.contentLoaderInfo.addEventListener(Event.COMPLETE, loader_complete);
-					break;
+		private function receive(e:NetStatusEvent, isGroup:Boolean):void {
+			var code:int=e.info.message.code
+			
+			var tp:TalkPanel = group2talkPanel[e.currentTarget];
+			
+			var e2:User = getUser(e.info.message.sender);
+			if (isGroup) {
+				var tp2:TalkPanel = tp;
+			}else {
+				tp2 = getOrCreateUserPanel(e2, talkPanel2group[tp]);
+				if (code!=CODE_NAME) {
+					wrapper.addChild(tp2);
+				}
 			}
+			tp2.receive(users,e2.name, e.info.message.time, code, e.info.message.data,e2);
+			if (code == CODE_NAME) tp.updateUserList(users);
 		}
 		
-		private function loader_complete(e:Event):void 
-		{
-			var con:LoaderInfo = e.currentTarget as LoaderInfo;
-			var image:Bitmap = (con.content as Bitmap);
-			tp.addImage(image.bitmapData);
-		}
-		
-		private function getUser(peerID:String):NetStatusEvent {
+		private function getUser(peerID:String):User {
 			for (var i:int = 0; i < users.length;i++ ) {
-				var e2:NetStatusEvent = users[i];
-				if (e2.info.peerID == peerID) {
+				var e2:User = users[i];
+				if (e2.peerID == peerID) {
 					return e2;
 				}
 			}
@@ -196,37 +189,65 @@ package talk {
 			trace(e.currentTarget);
 			trace(JSON.stringify(e.info, null, 4));
 			if (e.info.code == "NetConnection.Connect.Success") {
-				var gs:GroupSpecifier = new GroupSpecifier("test1");
+				var gs:GroupSpecifier = new GroupSpecifier("main");
 				gs.postingEnabled = true;
 				gs.routingEnabled = true;
 				gs.serverChannelEnabled = true;
 				gs.ipMulticastMemberUpdatesEnabled = true;
 				gs.addIPMulticastAddress("225.225.0.1:30303");
-				group = new NetGroup(conn, gs.groupspecWithAuthorizations());
-				group.addEventListener(NetStatusEvent.NET_STATUS, conn_netStatus);
+				var g:NetGroup = new NetGroup(conn, gs.groupspecWithAuthorizations());
+				g.addEventListener(NetStatusEvent.NET_STATUS, conn_netStatus);
+				groups.push(g);
 			}else if (e.info.code=="NetGroup.Connect.Success") {
 				loginmask.graphics.clear();
+				var talkPanel:TalkPanel = new TalkPanel(true,wrapper, 0, 0,"群聊 you name("+ myname+")");
+				talkPanel.addEventListener(TalkPanel.POST_EVENT, post);
+				talkPanel.addEventListener(TalkPanel.CUTOVER_EVENT,onCutOver);
+				talkPanel.addEventListener(TalkPanel.CLICKUSER_EVENT,onClickUser);
+				group2talkPanel[e.info.group] = talkPanel;
+				talkPanel2group[talkPanel] = e.info.group;
 			}else if (e.info.code=="NetGroup.Posting.Notify") {
-				receive(e);
+				receive(e,true);
 			}else if (e.info.code == "NetGroup.SendTo.Notify") {
-				receive(e);
-			}else if (e.info.code=="NetGroup.Neighbor.Connect") {
-				users.push(e);
-				tp.updateUserList(users);
+				receive(e,false);
+			}else if (e.info.code == "NetGroup.Neighbor.Connect") {
+				talkPanel = group2talkPanel[e.currentTarget];
+				users.push(new User(e.info.peerID));
+				talkPanel.updateUserList(users);
 				var nameMsg:Object = createMsg(myname, CODE_NAME);
-				tp.addLine(group.sendToNearest(nameMsg, group.convertPeerIDToGroupAddress(e.info.peerID)));
-			}else if (e.info.code=="NetGroup.Neighbor.Disconnect") {
+				talkPanel.addLine(e.currentTarget.sendToNearest(nameMsg, e.currentTarget.convertPeerIDToGroupAddress(e.info.peerID)));
+			}else if (e.info.code == "NetGroup.Neighbor.Disconnect") {
+				talkPanel = group2talkPanel[e.currentTarget];
 				for (var i:int = 0; i < users.length;i++ ) {
-					var e2:NetStatusEvent = users[i];
-					if (e2.info.peerID == e.info.peerID) {
+					var e2:User = users[i];
+					if (e2.peerID == e.info.peerID) {
 						users.splice(i, 1);
-						tp.updateUserList(users);
+						talkPanel.updateUserList(users);
 						break;
 					}
 				}
 			}
 		}
 		
+		private function onClickUser(e:Event):void 
+		{
+			var tp:TalkPanel = e.currentTarget as TalkPanel;
+			var user:User = tp.currentUser;
+			wrapper.addChild(getOrCreateUserPanel(user,talkPanel2group[tp]));
+		}
+		
+		private function getOrCreateUserPanel(user:User,group:NetGroup):TalkPanel {
+			var utp:TalkPanel = user2talkPanel[user];
+			if (utp==null) {
+				utp = new TalkPanel(false, null, 0, 0, user.name);
+				user2talkPanel[user] = utp;
+				utp.addEventListener(TalkPanel.POST_EVENT, post);
+				utp.addEventListener(TalkPanel.CUTOVER_EVENT, onCutOver);
+				talkPanel2group[utp] = group;
+				talkPanel2user[utp] = user;
+			}
+			return utp;
+		}
 		
 	}
 

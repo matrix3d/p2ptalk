@@ -12,10 +12,15 @@ package talk {
 	import flash.display.LoaderInfo;
 	import flash.events.ContextMenuEvent;
 	import flash.events.Event;
+	import flash.events.KeyboardEvent;
+	import flash.events.MouseEvent;
 	import flash.events.NetStatusEvent;
 	import flash.net.FileReference;
 	import flash.ui.ContextMenu;
 	import flash.ui.ContextMenuItem;
+	import flash.ui.Keyboard;
+	import flash.utils.ByteArray;
+	import flash.utils.Dictionary;
 	import ui.ImageTextArea;
 	/**
 	 * ...
@@ -23,18 +28,25 @@ package talk {
 	 */
 	public class TalkPanel extends Window
 	{
+		public static const POST_EVENT:String = "postevent";
+		public static const CUTOVER_EVENT:String = "cutoverevent";
+		public static const CLICKUSER_EVENT:String = "clickUserEvent";
+		
 		private var con:ImageTextArea;
 		private var list:VBox;
-		private var chatTest:ChatTest;
 		public var input:TextArea;
-		
+		public var btn2user:Dictionary = new Dictionary;
 		private var file:FileReference;
-		public function TalkPanel(chatTest:ChatTest,parent:DisplayObjectContainer=null, xpos:Number=0, ypos:Number=0, title:String="Window") 
+		public var isGroup:Boolean;
+		
+		public var currentBmd:BitmapData;
+		public var currentUser:User;
+		public function TalkPanel(isGroup:Boolean,parent:DisplayObjectContainer=null, xpos:Number=0, ypos:Number=0, title:String="Window") 
 		{
 			super(parent, xpos, ypos, title);
-			this.chatTest = chatTest;
+			this.isGroup = isGroup;
 			
-			setSize(710, 560);
+			setSize(720, 560);
 			
 			var hbox:HBox = new HBox(this,5,5);
 			var vbox:VBox = new VBox(hbox);
@@ -46,24 +58,63 @@ package talk {
 			input.setSize(600, 100);
 			
 			var hbox2:HBox = new HBox(vbox);
-			new PushButton(hbox2, 0, 0, "发送",chatTest.post);
+			new PushButton(hbox2, 0, 0, "发送",post);
 			new PushButton(hbox2, 0, 0, "截图",cutScr);
 			new PushButton(hbox2, 0, 0, "文件",sendFile);
 			
-			list = new VBox(vbox);
+			list = new VBox(hbox);
+			
+			addLine("open source flash p2p talk tool. https://github.com/matrix3d/p2ptalk");
+			
+			if(stage)
+			addedToStage(null)
+			else
+			addEventListener(Event.ADDED_TO_STAGE, addedToStage);
+			
+			if (!isGroup) {
+				hasCloseButton = true;
+				_closeButton.addEventListener(MouseEvent.CLICK, closeButton_click);
+			}
 		}
 		
+		private function closeButton_click(e:MouseEvent):void 
+		{
+			if (parent) {
+				parent.removeChild(this);
+			}
+		}
+		
+		private function addedToStage(e:Event):void 
+		{
+			removeEventListener(Event.ADDED_TO_STAGE, addedToStage);
+			stage.addEventListener(KeyboardEvent.KEY_UP, stage_keyDown);
+		}
+		
+		private function stage_keyDown(e:KeyboardEvent):void 
+		{
+			if (e.keyCode==Keyboard.ENTER&&e.ctrlKey) {
+				post(null);
+			}
+		}
+		
+		private function post(e:Event):void {
+			dispatchEvent(new Event(POST_EVENT));
+		}
 		
 		public function cutScr(e:Event):void {
 			if(CONFIG::air) {
-				ScrTool.startCut(chatTest.onCutOver, stage, addLine);
+				ScrTool.startCut(onCutOver, stage, addLine);
 				addLine("此功能需要按prt scr截屏键");
 			}else {
 				file = new FileReference();
 				file.addEventListener(Event.SELECT, file_select);
 				file.browse();
 			}
-			
+		}
+		
+		private function onCutOver(bmd:BitmapData):void {
+			currentBmd = bmd;
+			dispatchEvent(new Event(CUTOVER_EVENT));
 		}
 		
 		private function file_select(e:Event):void 
@@ -83,7 +134,7 @@ package talk {
 		
 		private function loader_complete_cut(e:Event):void 
 		{
-			chatTest.onCutOver(((e.currentTarget as LoaderInfo).content as Bitmap).bitmapData);
+			onCutOver(((e.currentTarget as LoaderInfo).content as Bitmap).bitmapData);
 		}
 		
 		public function sendFile(e:Event):void {
@@ -102,22 +153,47 @@ package talk {
 		}
 		
 		public function updateUserList(users:Array):void {
+			if (!isGroup) return;
 			list.removeChildren();
-			for each(var e:NetStatusEvent in users) {
-				var btn:PushButton=new PushButton(list, 0, 0, chatTest.e2name[e]||e.info.peerID);
-				var menu:ContextMenu = new ContextMenu;
-				var item:ContextMenuItem = new ContextMenuItem("送花");
-				chatTest.item2e[item] = e;
-				item.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT,item_select)
-				menu.customItems = [item];
-				btn.contextMenu = menu;
+			for each(var e:User in users) {
+				var btn:PushButton = new PushButton(list, 0, 0, e.name,btnclick);
+				btn2user[btn] = e;
 			}
 		}
 		
-		private function item_select(e:Event):void 
+		private function btnclick(e:Event):void 
 		{
-			var e2:NetStatusEvent = chatTest.item2e[e.currentTarget] as NetStatusEvent;
-			addLine(chatTest.group.sendToNearest(chatTest.createMsg("送你一朵花",ChatTest.CODE_TXT), chatTest.group.convertPeerIDToGroupAddress(e2.info.peerID)));
+			currentUser = btn2user[e.currentTarget];
+			dispatchEvent(new Event(CLICKUSER_EVENT));
+		}
+		
+		public function receive(users:Array,name:String, time:Number, code:int, data:Object, e2:User = null):void {
+			var date:Date = new Date(time);
+			addLine("<font color='#0000FF'>["+date.toLocaleTimeString()+"] ["+name+"] [延迟 " + (ChatTest.time-time)+"]</font>");
+			switch(code) {
+				case ChatTest.CODE_TXT:
+					addLine("<textformat indent='20'><font color='#000000'>"+data+"</font><br></textformat>");
+					break;
+				case ChatTest.CODE_NAME:
+					e2.name = data+"";
+					updateUserList(users);
+					if (!isGroup) {
+						title = e2.name;
+					}
+					break;
+				case ChatTest.CODE_IMAGE:
+					var loader:Loader = new Loader;
+					loader.loadBytes(data as ByteArray);
+					loader.contentLoaderInfo.addEventListener(Event.COMPLETE, loader_complete);
+					break;
+			}
+		}
+		
+		private function loader_complete(e:Event):void 
+		{
+			var con:LoaderInfo = e.currentTarget as LoaderInfo;
+			var image:Bitmap = (con.content as Bitmap);
+			addImage(image.bitmapData);
 		}
 	}
 

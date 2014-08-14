@@ -25,7 +25,7 @@ package ui {
 			part.dis = dis;
 			for (var i:int = 0; i < numline;i++ ) {
 				part.charIs.push(textField.text.length);
-				var line:String ="<p><textformat indent='"+indent+"'>i</textformat></p>";
+				var line:String ="<p><textformat indent='"+indent+"'>.</textformat></p>";
 				text += line;
 				draw();
 			}
@@ -35,28 +35,20 @@ package ui {
 		
 		private function updateImagePos(part:ImagePart):void {
 			var dis:DisplayObject = part.dis;
-			var rect:Rectangle = textField.getCharBoundaries(part.charIs[0]);
-			if (rect) {
-				dis.x = rect.x;
-				dis.y = rect.y + 3;
-				if (dis.parent==null) {
-					content.addChild(dis);
-				}
-			}else {
-				rect = textField.getCharBoundaries(part.charIs[part.charIs.length-1]);
+			if (dis.parent) {
+				dis.parent.removeChild(dis);
+			}
+			for (var i:int = 0; i < part.charIs.length;i++ ) {
+				var rect:Rectangle = textField.getCharBoundaries(part.charIs[i]);
 				if (rect) {
 					dis.x = rect.x;
-					dis.y = rect.y-dis.height + 3;
+					dis.y = rect.y + 3-i/part.charIs.length*dis.height;
 					if (dis.parent==null) {
 						content.addChild(dis);
 					}
-				}else{
-					if (dis.parent) {
-						dis.parent.removeChild(dis);
-					}
+					break;
 				}
 			}
-			
 		}
 		
 		override protected function updateScrollbar():void
@@ -110,7 +102,7 @@ package ui {
 			}
 			_mask.graphics.clear();
 			_mask.graphics.beginFill(0xff0000);
-			_mask.graphics.drawRect(0, 0, _width, _height);
+			_mask.graphics.drawRect(0, 0, _width-20, _height);
 			_mask.graphics.endFill();
 		}
 		
