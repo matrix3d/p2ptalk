@@ -34,8 +34,8 @@ package ui
 		private function closing(e:Event):void 
 		{
 			e.preventDefault();
-			minimize();
 			visible = false;
+			minimize();
 		}
 		
 	}

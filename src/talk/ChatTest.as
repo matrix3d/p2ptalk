@@ -1,6 +1,5 @@
 package talk {
 	import com.bit101.components.CheckBox;
-	import flash.desktop.NativeApplication;
 	import net.Group;
 	import talk.ScrTool;
 	import ui.ImageTextArea;
@@ -37,6 +36,9 @@ package talk {
 	import flash.ui.Keyboard;
 	import flash.utils.ByteArray;
 	import flash.utils.Dictionary;
+	CONFIG::air{
+	import flash.desktop.NativeApplication;
+	}
 	/**
 	 * ...
 	 * @author lizhi
@@ -98,9 +100,11 @@ package talk {
 			}
 		}
 		
+		CONFIG::air {
 		private function nativeWindow_close(e:Event):void 
 		{
 			NativeApplication.nativeApplication.exit();
+		}
 		}
 		
 		private function loginin(e:Event):void {
@@ -215,7 +219,7 @@ package talk {
 				groups.push(g);
 			}else if (e.info.code=="NetGroup.Connect.Success") {
 				loginmask.graphics.clear();
-				var talkPanel:TalkPanel = new TalkPanel(true, 0, 0, "群聊 you name(" + myname+")");
+				var talkPanel:TalkPanel = new TalkPanel(true, 0, 0, "群聊 your name(" + myname+")");
 				talkPanel.show(wrapper);
 				talkPanel.addEventListener(TalkPanel.POST_EVENT, post);
 				talkPanel.addEventListener(TalkPanel.CUTOVER_EVENT,onCutOver);
