@@ -10,8 +10,10 @@ package talk {
 	import flash.display.JPEGXREncoderOptions;
 	import flash.display.Loader;
 	import flash.display.LoaderInfo;
+	import flash.display.Sprite;
 	import flash.events.ContextMenuEvent;
 	import flash.events.Event;
+	import flash.events.EventDispatcher;
 	import flash.events.KeyboardEvent;
 	import flash.events.MouseEvent;
 	import flash.events.NetStatusEvent;
@@ -22,11 +24,12 @@ package talk {
 	import flash.utils.ByteArray;
 	import flash.utils.Dictionary;
 	import ui.ImageTextArea;
+	import ui.TNativeWindow;
 	/**
 	 * ...
 	 * @author lizhi
 	 */
-	public class TalkPanel extends Window
+	public class TalkPanel extends EventDispatcher
 	{
 		public static const POST_EVENT:String = "postevent";
 		public static const CUTOVER_EVENT:String = "cutoverevent";
@@ -41,21 +44,36 @@ package talk {
 		
 		public var currentBmd:BitmapData;
 		public var currentUser:User;
-		public function TalkPanel(isGroup:Boolean,parent:DisplayObjectContainer=null, xpos:Number=0, ypos:Number=0, title:String="Window") 
+		
+		private var parent:Sprite = new Sprite;
+		private var panel:Window;
+		
+		public var useNativeWindow:Boolean = false;
+		CONFIG::air {
+		private var tnw:TNativeWindow;
+		}
+		public function TalkPanel(isGroup:Boolean, xpos:Number=0, ypos:Number=0, title:String="Window") 
 		{
-			super(parent, xpos, ypos, title);
+			panel = new Window(parent, xpos, ypos, title);
 			this.isGroup = isGroup;
 			
-			setSize(720, 560);
+			var w:Number = 500;
+			var h:Number = 400;
 			
-			var hbox:HBox = new HBox(this,5,5);
+			//setSize(720, 560);
+			if(isGroup)
+			panel.setSize(w, h);
+			else
+			panel.setSize(w - 110, h);
+			
+			var hbox:HBox = new HBox(panel,5,5);
 			var vbox:VBox = new VBox(hbox);
 			con = new ImageTextArea(vbox);
 			con.editable = false;
 			con.html = true;
-			con.setSize(600, 400);
+			con.setSize(w-120, h-160);
 			input = new TextArea(vbox);
-			input.setSize(600, 100);
+			input.setSize(w-120, 100);
 			
 			var hbox2:HBox = new HBox(vbox);
 			new PushButton(hbox2, 0, 0, "发送",post);
@@ -66,28 +84,34 @@ package talk {
 			
 			addLine("open source flash p2p talk tool. https://github.com/matrix3d/p2ptalk");
 			
-			if(stage)
+			CONFIG::air {
+				if (!isGroup) useNativeWindow = true;
+				if(useNativeWindow)
+				tnw = new TNativeWindow(parent);
+			}
+			
+			if(parent.stage)
 			addedToStage(null)
 			else
-			addEventListener(Event.ADDED_TO_STAGE, addedToStage);
+			parent.addEventListener(Event.ADDED_TO_STAGE, addedToStage);
 			
 			if (!isGroup) {
-				hasCloseButton = true;
-				_closeButton.addEventListener(MouseEvent.CLICK, closeButton_click);
+				panel.hasCloseButton = true;
+				panel.addEventListener(Event.CLOSE, closeButton_click);
 			}
 		}
 		
-		private function closeButton_click(e:MouseEvent):void 
+		private function closeButton_click(e:Event):void 
 		{
-			if (parent) {
-				parent.removeChild(this);
+			if (parent.parent) {
+				parent.parent.removeChild(parent);
 			}
 		}
 		
 		private function addedToStage(e:Event):void 
 		{
-			removeEventListener(Event.ADDED_TO_STAGE, addedToStage);
-			stage.addEventListener(KeyboardEvent.KEY_UP, stage_keyDown);
+			parent.removeEventListener(Event.ADDED_TO_STAGE, addedToStage);
+			parent.stage.addEventListener(KeyboardEvent.KEY_UP, stage_keyDown);
 		}
 		
 		private function stage_keyDown(e:KeyboardEvent):void 
@@ -103,7 +127,7 @@ package talk {
 		
 		public function cutScr(e:Event):void {
 			if(CONFIG::air) {
-				ScrTool.startCut(onCutOver, stage, addLine);
+				ScrTool.startCut(onCutOver, parent.stage, addLine);
 				addLine("此功能需要按prt scr截屏键");
 			}else {
 				file = new FileReference();
@@ -178,7 +202,7 @@ package talk {
 					e2.name = data+"";
 					updateUserList(users);
 					if (!isGroup) {
-						title = e2.name;
+						panel.title = e2.name;
 					}
 					break;
 				case ChatTest.CODE_IMAGE:
@@ -195,6 +219,19 @@ package talk {
 			var image:Bitmap = (con.content as Bitmap);
 			addImage(image.bitmapData);
 		}
+		
+		
+		public function show(wrapper:Sprite):void {
+			if (CONFIG::air) {
+				if(useNativeWindow)
+				tnw.activate();
+				else
+				wrapper.addChild(parent);
+			}else {
+				wrapper.addChild(parent);
+			}
+		}
+		
 	}
 
 }

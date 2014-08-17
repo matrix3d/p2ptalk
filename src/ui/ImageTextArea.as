@@ -1,9 +1,13 @@
 package ui {
 	import com.bit101.components.TextArea;
+	import flash.display.Bitmap;
 	import flash.display.DisplayObject;
 	import flash.display.DisplayObjectContainer;
+	import flash.display.PNGEncoderOptions;
 	import flash.display.Sprite;
+	import flash.events.MouseEvent;
 	import flash.geom.Rectangle;
+	import flash.net.FileReference;
 	import flash.text.TextFieldType;
 	/**
 	 * ...
@@ -19,10 +23,14 @@ package ui {
 			textField.condenseWhite = true;
 		}
 		
-		public function addImage(dis:DisplayObject, width:Number, height:Number, indent:int = 0):void {
+		public function addImage(img:Bitmap, width:Number, height:Number, indent:int = 0):void {
 			var numline:int = Math.ceil(height / 12);
 			var part:ImagePart = new ImagePart;
-			part.dis = dis;
+			part.dis = new ImageWrapper;
+			part.dis.addChild(img);
+			part.dis.image = img;
+			part.dis.doubleClickEnabled = true;
+			part.dis.addEventListener(MouseEvent.DOUBLE_CLICK, dis_doubleClick);
 			for (var i:int = 0; i < numline;i++ ) {
 				part.charIs.push(textField.text.length);
 				var line:String ="<p><textformat indent='"+indent+"'>.</textformat></p>";
@@ -31,6 +39,13 @@ package ui {
 			}
 			imageParts.push(part);
 			updateImagePos(part);
+		}
+		
+		private function dis_doubleClick(e:MouseEvent):void 
+		{
+			var iw:ImageWrapper = e.currentTarget as ImageWrapper;
+			var file:FileReference = new FileReference;
+			file.save(iw.image.bitmapData.encode(iw.image.bitmapData.rect, new PNGEncoderOptions), "png.png");
 		}
 		
 		private function updateImagePos(part:ImagePart):void {
@@ -109,9 +124,15 @@ package ui {
 	}
 
 }
+import flash.display.Bitmap;
 import flash.display.DisplayObject;
+import flash.display.Sprite;
 
 class ImagePart {
-	public var dis:DisplayObject;
+	public var dis:ImageWrapper;
 	public var charIs:Array=[];
+}
+
+class ImageWrapper extends Sprite {
+	public var image:Bitmap;
 }

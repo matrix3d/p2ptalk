@@ -1,4 +1,6 @@
 package talk {
+	import com.bit101.components.CheckBox;
+	import flash.desktop.NativeApplication;
 	import net.Group;
 	import talk.ScrTool;
 	import ui.ImageTextArea;
@@ -59,6 +61,7 @@ package talk {
 		private var user2talkPanel:Dictionary = new Dictionary;
 		private var talkPanel2group:Dictionary = new Dictionary;
 		private var talkPanel2user:Dictionary = new Dictionary;
+		private var isLan:CheckBox;
 		public function ChatTest() 
 		{
 			if (stage) 
@@ -87,17 +90,28 @@ package talk {
 			var vbox:VBox = new VBox(loginui, 5, 5);
 			mynameinput= new InputText(vbox,0,0,"test"+int(Math.random()*100));
 			new PushButton(vbox, 0, 0, "登陆",loginin);
+			isLan= new CheckBox(vbox, 0, 0, "lan");
 			loginui.setSize(200, 200);
 			
-			
+			CONFIG::air {
+				stage.nativeWindow.addEventListener(Event.CLOSE, nativeWindow_close);
+			}
+		}
+		
+		private function nativeWindow_close(e:Event):void 
+		{
+			NativeApplication.nativeApplication.exit();
 		}
 		
 		private function loginin(e:Event):void {
 			myname = mynameinput.text;
 			conn = new NetConnection();
 			conn.addEventListener(NetStatusEvent.NET_STATUS, conn_netStatus);
-			//conn.connect("rtmfp:");
-			conn.connect("rtmfp://p2p.rtmfp.net/fe0704d85bec8171e0f35e7a-4e39644da8a0/");
+			if (isLan.selected) {
+				conn.connect("rtmfp:");
+			}else {
+				conn.connect("rtmfp://p2p.rtmfp.net/fe0704d85bec8171e0f35e7a-4e39644da8a0/");
+			}
 			if (loginui.parent) {
 				loginui.parent.removeChild(loginui);
 			}
@@ -166,8 +180,8 @@ package talk {
 				var tp2:TalkPanel = tp;
 			}else {
 				tp2 = getOrCreateUserPanel(e2, talkPanel2group[tp]);
-				if (code!=CODE_NAME) {
-					wrapper.addChild(tp2);
+				if (code != CODE_NAME) {
+					tp2.show(wrapper);
 				}
 			}
 			tp2.receive(users,e2.name, e.info.message.time, code, e.info.message.data,e2);
@@ -201,7 +215,8 @@ package talk {
 				groups.push(g);
 			}else if (e.info.code=="NetGroup.Connect.Success") {
 				loginmask.graphics.clear();
-				var talkPanel:TalkPanel = new TalkPanel(true,wrapper, 0, 0,"群聊 you name("+ myname+")");
+				var talkPanel:TalkPanel = new TalkPanel(true, 0, 0, "群聊 you name(" + myname+")");
+				talkPanel.show(wrapper);
 				talkPanel.addEventListener(TalkPanel.POST_EVENT, post);
 				talkPanel.addEventListener(TalkPanel.CUTOVER_EVENT,onCutOver);
 				talkPanel.addEventListener(TalkPanel.CLICKUSER_EVENT,onClickUser);
@@ -234,13 +249,13 @@ package talk {
 		{
 			var tp:TalkPanel = e.currentTarget as TalkPanel;
 			var user:User = tp.currentUser;
-			wrapper.addChild(getOrCreateUserPanel(user,talkPanel2group[tp]));
+			getOrCreateUserPanel(user,talkPanel2group[tp]).show(wrapper);
 		}
 		
 		private function getOrCreateUserPanel(user:User,group:NetGroup):TalkPanel {
 			var utp:TalkPanel = user2talkPanel[user];
 			if (utp==null) {
-				utp = new TalkPanel(false, null, 0, 0, user.name);
+				utp = new TalkPanel(false, 0, 0, user.name);
 				user2talkPanel[user] = utp;
 				utp.addEventListener(TalkPanel.POST_EVENT, post);
 				utp.addEventListener(TalkPanel.CUTOVER_EVENT, onCutOver);
