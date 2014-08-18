@@ -64,6 +64,7 @@ package talk {
 		private var talkPanel2group:Dictionary = new Dictionary;
 		private var talkPanel2user:Dictionary = new Dictionary;
 		private var isLan:CheckBox;
+		private var bugTemp:String;
 		public function ChatTest() 
 		{
 			if (stage) 
@@ -130,9 +131,9 @@ package talk {
 			if(tp.input.text!=""&&conn){
 				var msg:Object = createMsg(tp.input.text,CODE_TXT,tp.isGroup);
 				if (tp.isGroup) {
-					tp.addLine(g.sendToAllNeighbors(msg));
+					bugTemp=g.sendToAllNeighbors(msg);
 				}else {
-					tp.addLine(g.sendToNearest(msg,g.convertPeerIDToGroupAddress(user.peerID)));
+					bugTemp=g.sendToNearest(msg,g.convertPeerIDToGroupAddress(user.peerID));
 				}
 				
 				tp.input.text = "";
@@ -150,11 +151,32 @@ package talk {
 			if (bmd) {
 				var msg:Object = createMsg(bmd.encode(bmd.rect, new JPEGXREncoderOptions), CODE_IMAGE,tp.isGroup);
 				if (tp.isGroup) {
-					tp.addLine(g.sendToAllNeighbors(msg));
+					bugTemp=g.sendToAllNeighbors(msg);
 				}else {
-					tp.addLine(g.sendToNearest(msg, g.convertPeerIDToGroupAddress(user.peerID)));
+					bugTemp=g.sendToNearest(msg, g.convertPeerIDToGroupAddress(user.peerID));
 				}
 				tp.receive(users,"you", msg.time, CODE_IMAGE, msg.data);
+			}
+		}
+		
+		
+		
+		private function talkPanel_fileoverEvent(e:Event):void 
+		{
+			var tp:TalkPanel = e.currentTarget as TalkPanel;
+			var g:NetGroup = talkPanel2group[tp];
+			if (!tp.isGroup) {
+				var user:User = talkPanel2user[tp];
+			}
+			var byte:ByteArray = tp.currentByte;
+			if (byte) {
+				var msg:Object = createMsg(byte, CODE_FILE,tp.isGroup);
+				if (tp.isGroup) {
+					bugTemp=g.sendToAllNeighbors(msg);
+				}else {
+					bugTemp=g.sendToNearest(msg, g.convertPeerIDToGroupAddress(user.peerID));
+				}
+				tp.receive(users,"you", msg.time, CODE_FILE, msg.data);
 			}
 		}
 		
@@ -222,7 +244,8 @@ package talk {
 				var talkPanel:TalkPanel = new TalkPanel(true, 0, 0, "群聊 your name(" + myname+")");
 				talkPanel.show(wrapper);
 				talkPanel.addEventListener(TalkPanel.POST_EVENT, post);
-				talkPanel.addEventListener(TalkPanel.CUTOVER_EVENT,onCutOver);
+				talkPanel.addEventListener(TalkPanel.CUTOVER_EVENT, onCutOver);
+				talkPanel.addEventListener(TalkPanel.FILEOVER_EVENT, talkPanel_fileoverEvent);
 				talkPanel.addEventListener(TalkPanel.CLICKUSER_EVENT,onClickUser);
 				group2talkPanel[e.info.group] = talkPanel;
 				talkPanel2group[talkPanel] = e.info.group;
@@ -235,7 +258,7 @@ package talk {
 				users.push(new User(e.info.peerID));
 				talkPanel.updateUserList(users);
 				var nameMsg:Object = createMsg(myname, CODE_NAME,false);
-				talkPanel.addLine(e.currentTarget.sendToNearest(nameMsg, e.currentTarget.convertPeerIDToGroupAddress(e.info.peerID)));
+				bugTemp=e.currentTarget.sendToNearest(nameMsg, e.currentTarget.convertPeerIDToGroupAddress(e.info.peerID));
 			}else if (e.info.code == "NetGroup.Neighbor.Disconnect") {
 				talkPanel = group2talkPanel[e.currentTarget];
 				for (var i:int = 0; i < users.length;i++ ) {
@@ -263,6 +286,7 @@ package talk {
 				user2talkPanel[user] = utp;
 				utp.addEventListener(TalkPanel.POST_EVENT, post);
 				utp.addEventListener(TalkPanel.CUTOVER_EVENT, onCutOver);
+				utp.addEventListener(TalkPanel.FILEOVER_EVENT, talkPanel_fileoverEvent);
 				talkPanel2group[utp] = group;
 				talkPanel2user[utp] = user;
 			}

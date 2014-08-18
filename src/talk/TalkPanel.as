@@ -17,6 +17,7 @@ package talk {
 	import flash.events.KeyboardEvent;
 	import flash.events.MouseEvent;
 	import flash.events.NetStatusEvent;
+	import flash.events.TextEvent;
 	import flash.net.FileReference;
 	import flash.ui.ContextMenu;
 	import flash.ui.ContextMenuItem;
@@ -33,6 +34,7 @@ package talk {
 	{
 		public static const POST_EVENT:String = "postevent";
 		public static const CUTOVER_EVENT:String = "cutoverevent";
+		public static const FILEOVER_EVENT:String = "cutoverevent";
 		public static const CLICKUSER_EVENT:String = "clickUserEvent";
 		
 		private var con:ImageTextArea;
@@ -43,18 +45,22 @@ package talk {
 		public var isGroup:Boolean;
 		
 		public var currentBmd:BitmapData;
+		public var currentByte:ByteArray;
 		public var currentUser:User;
 		
-		private var parent:Sprite = new Sprite;
 		private var panel:Window;
 		
 		public var useNativeWindow:Boolean = false;
 		CONFIG::air {
 		private var tnw:TNativeWindow;
 		}
+		private var wrapper:Sprite = new Sprite;
+		private var user:User;
+		private var fileCode:int;
+		private var filesDir:Array = [];
 		public function TalkPanel(isGroup:Boolean, xpos:Number=0, ypos:Number=0, title:String="Window") 
 		{
-			panel = new Window(parent, xpos, ypos, title);
+			panel = new Window(null, xpos, ypos, title);
 			this.isGroup = isGroup;
 			
 			var w:Number = 500;
@@ -66,12 +72,14 @@ package talk {
 			else
 			panel.setSize(w - 110, h);
 			
-			var hbox:HBox = new HBox(panel,5,5);
+			panel.addChild(wrapper);
+			var hbox:HBox = new HBox(wrapper,5,5);
 			var vbox:VBox = new VBox(hbox);
 			con = new ImageTextArea(vbox);
 			con.editable = false;
 			con.html = true;
-			con.setSize(w-120, h-160);
+			con.setSize(w - 120, h - 160);
+			con.textField.addEventListener(TextEvent.LINK, textField_link);
 			input = new TextArea(vbox);
 			input.setSize(w-120, 100);
 			
@@ -82,18 +90,17 @@ package talk {
 			
 			list = new VBox(hbox);
 			
-			addLine("open source flash p2p talk tool. https://github.com/matrix3d/p2ptalk");
+			if(isGroup)
+			addLine("open source flash p2p talk tool. <u><a href='https://github.com/matrix3d/p2ptalk'>https://github.com/matrix3d/p2ptalk</a></u>");
 			
 			CONFIG::air {
 				if (!isGroup) useNativeWindow = true;
-				if(useNativeWindow)
-				tnw = new TNativeWindow(parent);
 			}
 			
-			if(parent.stage)
+			if(wrapper.stage)
 			addedToStage(null)
 			else
-			parent.addEventListener(Event.ADDED_TO_STAGE, addedToStage);
+			wrapper.addEventListener(Event.ADDED_TO_STAGE, addedToStage);
 			
 			if (!isGroup) {
 				panel.hasCloseButton = true;
@@ -101,17 +108,32 @@ package talk {
 			}
 		}
 		
+		private function textField_link(e:TextEvent):void 
+		{
+			var arr:Array = e.text.split(",");
+			var v:String=arr[1]
+			switch(arr[0]) {
+				case "file":
+					var files:Array = filesDir[v];
+					if (files) {
+						var file:FileReference = new FileReference;
+						file.save(files[1], files[0]);
+					}
+					break;
+			}
+		}
+		
 		private function closeButton_click(e:Event):void 
 		{
-			if (parent.parent) {
-				parent.parent.removeChild(parent);
+			if (panel.parent) {
+				panel.parent.removeChild(panel);
 			}
 		}
 		
 		private function addedToStage(e:Event):void 
 		{
-			parent.removeEventListener(Event.ADDED_TO_STAGE, addedToStage);
-			parent.stage.addEventListener(KeyboardEvent.KEY_UP, stage_keyDown);
+			wrapper.removeEventListener(Event.ADDED_TO_STAGE, addedToStage);
+			wrapper.stage.addEventListener(KeyboardEvent.KEY_DOWN, stage_keyDown);
 		}
 		
 		private function stage_keyDown(e:KeyboardEvent):void 
@@ -127,12 +149,10 @@ package talk {
 		
 		public function cutScr(e:Event):void {
 			if(CONFIG::air) {
-				ScrTool.startCut(onCutOver, parent.stage, addLine);
+				ScrTool.startCut(onCutOver, wrapper.stage, addLine);
 				addLine("此功能需要按prt scr截屏键");
 			}else {
-				file = new FileReference();
-				file.addEventListener(Event.SELECT, file_select);
-				file.browse();
+				openFile(ChatTest.CODE_IMAGE);
 			}
 		}
 		
@@ -151,9 +171,16 @@ package talk {
 		private function file_complete(e:Event):void 
 		{
 			var file:FileReference = e.currentTarget as FileReference;
-			var loader:Loader = new Loader;
-			loader.contentLoaderInfo.addEventListener(Event.COMPLETE, loader_complete_cut);
-			loader.loadBytes(file.data);
+			if (fileCode==ChatTest.CODE_IMAGE) {
+				var loader:Loader = new Loader;
+				loader.contentLoaderInfo.addEventListener(Event.COMPLETE, loader_complete_cut);
+				loader.loadBytes(file.data);
+			}else {
+				currentByte = new ByteArray;
+				currentByte.writeObject([file.name,file.data]);
+				dispatchEvent(new Event(FILEOVER_EVENT));
+			}
+			
 		}
 		
 		private function loader_complete_cut(e:Event):void 
@@ -162,7 +189,14 @@ package talk {
 		}
 		
 		public function sendFile(e:Event):void {
-			addLine("该功能暂未开放");
+			openFile(ChatTest.CODE_FILE);
+		}
+		
+		private function openFile(fileCode:int):void {
+			this.fileCode = fileCode;
+			file = new FileReference();
+			file.addEventListener(Event.SELECT, file_select);
+			file.browse();
 		}
 		
 		public function addLine(txt:String):void {
@@ -191,18 +225,32 @@ package talk {
 			dispatchEvent(new Event(CLICKUSER_EVENT));
 		}
 		
-		public function receive(users:Array,name:String, time:Number, code:int, data:Object, e2:User = null):void {
+		public function receive(users:Array,name:String, time:Number, code:int, data:Object, user:User = null):void {
+			this.user = user;
 			var date:Date = new Date(time);
-			addLine("<font color='#0000FF'>["+date.toLocaleTimeString()+"] ["+name+"] [延迟 " + (ChatTest.time-time)+"]</font>");
+			if(code!=ChatTest.CODE_NAME)
+				addLine("<font color='#0000FF'>"+name+" "+ date.toLocaleTimeString()+" ping " + (ChatTest.time-time)+"</font>");
 			switch(code) {
 				case ChatTest.CODE_TXT:
-					addLine("<textformat indent='20'><font color='#000000'>"+data+"</font><br></textformat>");
+					addLine("<textformat indent='20'><font color='#000000'>"+data+"</font></textformat>");
+					break;
+				case ChatTest.CODE_FILE:
+					var byte:ByteArray = data as ByteArray;
+					byte.position = 0;
+					var files:Array = byte.readObject() as Array; 
+					var fileByte:ByteArray = files[1] as ByteArray;
+					var id:int = filesDir.length;
+					filesDir.push(files);
+					addLine("<a href='event:file,"+id+"'><u><textformat indent='20'><font color='#000000'>"+files[0] +" "+(fileByte.length/1024/1024).toFixed(2)+"m</font></textformat></u></a>");
 					break;
 				case ChatTest.CODE_NAME:
-					e2.name = data+"";
+					user.name = data+"";
 					updateUserList(users);
-					if (!isGroup) {
-						panel.title = e2.name;
+					panel.title = user.name;
+					CONFIG::air {
+						if (tnw&&!tnw.closed) {
+							tnw.title = user.name;
+						}
 					}
 					break;
 				case ChatTest.CODE_IMAGE:
@@ -221,14 +269,21 @@ package talk {
 		}
 		
 		
-		public function show(wrapper:Sprite):void {
+		public function show(parent:Sprite):void {
 			if (CONFIG::air) {
-				if(useNativeWindow)
-				tnw.activate();
+				if (useNativeWindow) {
+					if (tnw&&!tnw.closed) {
+						tnw.activate();
+					}else {
+						tnw = new TNativeWindow(wrapper);
+						if (user) tnw.title = user.name;
+						tnw.activate();
+					}
+				}
 				else
-				wrapper.addChild(parent);
+				parent.addChild(panel);
 			}else {
-				wrapper.addChild(parent);
+				parent.addChild(panel);
 			}
 		}
 		

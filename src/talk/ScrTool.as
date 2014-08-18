@@ -46,10 +46,10 @@ package talk {
 				var bmd:BitmapData = Clipboard.generalClipboard.getData(ClipboardFormats.BITMAP_FORMAT) as BitmapData;
 				//Clipboard.generalClipboard.clear();
 				scrImage.bitmapData = bmd;
-				if (scrWin==null) {
+				if (scrWin==null||scrWin.closed) {
 					var opt:NativeWindowInitOptions = new NativeWindowInitOptions;
 					opt.type = NativeWindowType.LIGHTWEIGHT;
-					opt.owner = stage.nativeWindow;
+					//opt.owner = stage.nativeWindow;
 					opt.systemChrome = NativeWindowSystemChrome.NONE;
 					scrWin = new NativeWindow(opt);
 					
@@ -60,13 +60,11 @@ package talk {
 					scrWin.stage.addEventListener(MouseEvent.MOUSE_DOWN, scrImageWrapper_mouseDown);
 					scrWin.stage.addEventListener(MouseEvent.MOUSE_MOVE, mouseMove);
 					scrWin.stage.addEventListener(MouseEvent.MOUSE_UP, stage_mouseUp);
-					scrWin.addEventListener(Event.CLOSING, scrWin_closing);
-					
+					scrWin.alwaysInFront = true;
 					drawPanel = new Sprite;
 					scrWin.stage.addChild(drawPanel);
 					drawPanel.filters = [new GlowFilter(0xff0000,1,2,2)];
 				}
-				stage.nativeWindow.alwaysInFront = true;
 				scrWin.activate();
 				scrWin.x = 0;
 				scrWin.y = 0;
@@ -114,13 +112,10 @@ package talk {
 			if(rect.width>0&&rect.height>0){
 				var bmd:BitmapData = new BitmapData(rect.width,rect.height, false, 0);
 				bmd.copyPixels(scrImage.bitmapData, rect, new Point);
-				scrWin.minimize();
-				scrWin.visible = false;
+				scrWin.close();
 				downPos = null;
 				onCutOver(bmd);
 				downPos = null;
-				
-				stage.nativeWindow.alwaysInFront = false;
 			}
 		}
 		
@@ -131,22 +126,9 @@ package talk {
 		
 		static private function stage_keyUp(e:KeyboardEvent):void 
 		{
-			if (e.keyCode==Keyboard.ESCAPE) {
-				scrWin.minimize();
-				scrWin.visible = false;
-				downPos = null;
-				
-				stage.nativeWindow.alwaysInFront = false;
+			if (e.keyCode==Keyboard.ESCAPE&&!scrWin.closed) {
+				scrWin.close();
 			}
-		}
-		
-		static private function scrWin_closing(e:Event):void 
-		{	
-			e.preventDefault();
-			scrWin.minimize();
-			scrWin.visible = false;
-			stage.nativeWindow.alwaysInFront = false;
-			downPos = null;
 		}
 		
 	}
