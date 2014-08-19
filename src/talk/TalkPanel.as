@@ -34,7 +34,7 @@ package talk {
 	{
 		public static const POST_EVENT:String = "postevent";
 		public static const CUTOVER_EVENT:String = "cutoverevent";
-		public static const FILEOVER_EVENT:String = "cutoverevent";
+		public static const FILEOVER_EVENT:String = "fileoverevent";
 		public static const CLICKUSER_EVENT:String = "clickUserEvent";
 		
 		private var con:ImageTextArea;

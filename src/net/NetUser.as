@@ -4,10 +4,10 @@ package net
 	 * 网络成员
 	 * @author lizhi
 	 */
-	public class Node 
+	public class NetUser 
 	{
-		
-		public function Node() 
+		public var id:String;
+		public function NetUser() 
 		{
 			
 		}

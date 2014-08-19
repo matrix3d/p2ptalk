@@ -1,5 +1,6 @@
 package talk 
 {
+	import net.NetUser;
 	/**
 	 * ...
 	 * @author lizhi
@@ -7,10 +8,10 @@ package talk
 	public class User 
 	{
 		public var name:String;
-		public var peerID:String;
-		public function User(peerID:String,name:String=null) 
+		public var user:net.NetUser
+		public function User(user:net.NetUser,name:String=null) 
 		{
-			this.peerID = peerID;
+			this.user = user;
 			this.name = name;
 		}
 		
