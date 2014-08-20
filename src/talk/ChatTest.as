@@ -49,6 +49,8 @@ package talk {
 		private var talkPanel2user:Dictionary = new Dictionary;
 		private var isLan:CheckBox;
 		private var isTcp:CheckBox;
+		private var serverIp:InputText;
+		private var serverPort:InputText;
 		private var server:Connecter;
 		public function ChatTest() 
 		{
@@ -82,7 +84,9 @@ package talk {
 			mynameinput= new InputText(vbox,0,0,"test"+int(Math.random()*100));
 			new PushButton(vbox, 0, 0, "登陆",loginin);
 			isLan= new CheckBox(vbox, 0, 0, "lan");
-			isTcp= new CheckBox(vbox, 0, 0, "tcp");
+			isTcp = new CheckBox(vbox, 0, 0, "tcp");
+			serverIp = new InputText(vbox, 0, 0, "host");
+			serverPort = new InputText(vbox, 0, 0, "4444");
 			loginui.setSize(200, 200);
 			
 			CONFIG::air {
@@ -101,7 +105,7 @@ package talk {
 			myname = mynameinput.text;
 			
 			if (isTcp.selected) {
-				server = new TcpConnecter("127.0.0.1", 4444);
+				server = new TcpConnecter(serverIp.text, int(serverPort.text));
 			}else {
 				if (isLan.selected) {
 					server = new P2PConnecter("rtmfp:");
