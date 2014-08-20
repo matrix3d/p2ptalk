@@ -1,16 +1,17 @@
 package net 
 {
+	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	/**
 	 * 服务器
 	 * @author lizhi
 	 */
-	public class Server extends EventDispatcher
+	public class Connecter extends EventDispatcher
 	{
 		public var groups:Vector.<Group>=new Vector.<Group>;
 		public var users:Vector.<NetUser> = new Vector.<NetUser>;
 		public var parser:MsgParser;
-		public function Server() 
+		public function Connecter() 
 		{
 			parser = new MsgParser;
 			parser.server = this;
@@ -28,7 +29,7 @@ package net
 			return null;
 		}
 		
-		public function createGroup(group:Group):void {
+		public function startGroup(group:Group):void {
 		}
 		
 		public function getUser(id:String):NetUser {
@@ -57,6 +58,17 @@ package net
 					users.splice(i, 1);
 					return user;
 				}
+			}
+			return null;
+		}
+		
+		public function connectSuccess():void {
+			dispatchEvent(new Event(Event.CONNECT));
+		}
+		
+		public function getGroup(name:String):Group {
+			for each(var g:Group in groups) {
+				if (g.name == name) return g;
 			}
 			return null;
 		}

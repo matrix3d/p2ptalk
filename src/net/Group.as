@@ -10,7 +10,8 @@ package net
 	public class Group extends EventDispatcher
 	{
 		public var users:Vector.<NetUser> = new Vector.<NetUser>;
-		public var server:Server;
+		public var connnecter:Connecter;
+		public var name:String;
 		public function Group() 
 		{
 			

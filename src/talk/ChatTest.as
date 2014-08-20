@@ -17,8 +17,10 @@ package talk {
 	import net.Group;
 	import net.NetUser;
 	import net.p2p.P2PGroup;
-	import net.p2p.P2PServer;
-	import net.Server;
+	import net.p2p.P2PConnecter;
+	import net.Connecter;
+	import net.tcp.TcpConnecter;
+	import net.tcp.TcpServer;
 	CONFIG::air{
 	import flash.desktop.NativeApplication;
 	}
@@ -46,7 +48,8 @@ package talk {
 		private var talkPanel2group:Dictionary = new Dictionary;
 		private var talkPanel2user:Dictionary = new Dictionary;
 		private var isLan:CheckBox;
-		private var server:Server;
+		private var isTcp:CheckBox;
+		private var server:Connecter;
 		public function ChatTest() 
 		{
 			if (stage) 
@@ -57,10 +60,13 @@ package talk {
 		
 		private function addedToStage(e:Event):void 
 		{
+			CONFIG::air{
+				new TcpServer();
+			}
+			
 			removeEventListener(Event.ADDED_TO_STAGE, addedToStage);
 			stage.align = StageAlign.TOP_LEFT;
 			stage.scaleMode = StageScaleMode.NO_SCALE;
-			
 			
 			Style.embedFonts = false;
 			Style.fontName = "宋体";
@@ -76,6 +82,7 @@ package talk {
 			mynameinput= new InputText(vbox,0,0,"test"+int(Math.random()*100));
 			new PushButton(vbox, 0, 0, "登陆",loginin);
 			isLan= new CheckBox(vbox, 0, 0, "lan");
+			isTcp= new CheckBox(vbox, 0, 0, "tcp");
 			loginui.setSize(200, 200);
 			
 			CONFIG::air {
@@ -92,17 +99,25 @@ package talk {
 		
 		private function loginin(e:Event):void {
 			myname = mynameinput.text;
-			if (isLan.selected) {
-				server = new P2PServer("rtmfp:");
+			
+			if (isTcp.selected) {
+				server = new TcpConnecter("127.0.0.1", 4444);
 			}else {
-				server = new P2PServer("rtmfp://p2p.rtmfp.net/fe0704d85bec8171e0f35e7a-4e39644da8a0/");
+				if (isLan.selected) {
+					server = new P2PConnecter("rtmfp:");
+				}else {
+					server = new P2PConnecter("rtmfp://p2p.rtmfp.net/fe0704d85bec8171e0f35e7a-4e39644da8a0/");
+				}
 			}
+			
 			if (loginui.parent) {
 				loginui.parent.removeChild(loginui);
 			}
 			server.addEventListener(Event.CONNECT, server_connect);
 			server.parser.receiveFun = receive;
 			server.start();
+			
+			
 		}
 		
 		private function server_connect(e:Event):void 
@@ -111,7 +126,7 @@ package talk {
 			g.addEventListener(Event.CONNECT, g_connect);
 			g.addEventListener(UserEvent.ADD_USER, g_addUser);
 			g.addEventListener(UserEvent.REMOVE_USER, g_removeUser);
-			server.createGroup(g);
+			server.startGroup(g);
 		}
 		
 		private function g_removeUser(e:UserEvent):void 

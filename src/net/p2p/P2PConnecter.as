@@ -5,17 +5,17 @@ package net.p2p
 	import flash.net.NetConnection;
 	import flash.net.NetGroup;
 	import net.Group;
-	import net.Server;
+	import net.Connecter;
 	import net.NetUser;
 	/**
 	 * ...
 	 * @author lizhi
 	 */
-	public class P2PServer extends Server
+	public class P2PConnecter extends Connecter
 	{
 		private var connCommand:String;
 		public var conn:NetConnection;
-		public function P2PServer(connCommand:String) 
+		public function P2PConnecter(connCommand:String) 
 		{
 			this.connCommand = connCommand;
 			
@@ -30,16 +30,16 @@ package net.p2p
 		}
 		
 		override public function stop():void {
-			conn.close();
+			if(conn)conn.close();
 		}
 		
 		override public function createGroupByName(name:String):Group {
 			return P2PGroup.createByName(name);
 		}
 		
-		override public function createGroup(group:Group):void {
+		override public function startGroup(group:Group):void {
 			var p2pGroup:P2PGroup = group as P2PGroup;
-			group.server = this;
+			group.connnecter = this;
 			var netg:NetGroup = new NetGroup(conn, p2pGroup.groupSpecifier.groupspecWithAuthorizations());
 			groups.push(p2pGroup);
 			p2pGroup.netGroup = netg;
@@ -52,7 +52,7 @@ package net.p2p
 				var group:Group = getGroupByNetGroup(e.currentTarget as NetGroup);
 			}
 			if (e.info.code == "NetConnection.Connect.Success") {
-				dispatchEvent(new Event(Event.CONNECT));
+				connectSuccess();
 			}else if (e.info.code == "NetGroup.Connect.Success") {
 				group = getGroupByNetGroup(e.info.group as NetGroup);
 				group.connectSuccess();

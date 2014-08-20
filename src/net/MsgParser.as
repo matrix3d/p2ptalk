@@ -6,7 +6,7 @@ package net
 	 */
 	public class MsgParser 
 	{
-		public var server:Server;
+		public var server:Connecter;
 		public var receiveFun:Function;
 		public function MsgParser() 
 		{

@@ -4,6 +4,7 @@ package net.p2p
 	import flash.net.NetGroup;
 	import net.Group;
 	import net.NetUser;
+	import talk.User;
 	/**
 	 * ...
 	 * @author lizhi
@@ -26,11 +27,16 @@ package net.p2p
 			gs.serverChannelEnabled = true;
 			gs.ipMulticastMemberUpdatesEnabled = true;
 			gs.addIPMulticastAddress("225.225.0.1:30303");
-			return new P2PGroup(gs);
+			var g:P2PGroup = new P2PGroup(gs);
+			g.name = name;
+			return g;
 		}
 		
 		override public function post(data:Object):void {
-			helpStr = netGroup.sendToAllNeighbors(createMsg(data));
+			var msg:Object = createMsg(data);
+			for each(var user:NetUser in users) {
+				helpStr = netGroup.sendToNearest(msg, netGroup.convertPeerIDToGroupAddress(user.id));
+			}
 		}
 		
 		override public function sendTo(user:NetUser,data:Object):void {
@@ -38,7 +44,7 @@ package net.p2p
 		}
 		
 		public function createMsg(data:Object):Object {
-			var p2pServer:P2PServer = server as P2PServer;
+			var p2pServer:P2PConnecter = connnecter as P2PConnecter;
 			var msg:Object = { };
 			msg.sender = p2pServer.conn.nearID
 			msg.data = data;
