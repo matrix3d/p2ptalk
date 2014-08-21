@@ -4,6 +4,7 @@ package net.tcp
 	import flash.events.IOErrorEvent;
 	import flash.events.ProgressEvent;
 	import flash.net.Socket;
+	import flash.system.Security;
 	import net.Connecter;
 	import net.Group;
 	/**
@@ -27,7 +28,14 @@ package net.tcp
 		{
 			this.port = port;
 			this.host = host;
-			readerCalbak= new TcpReaderCalbak(this);
+			readerCalbak = new TcpReaderCalbak(this);
+			
+			try {
+				Security.allowDomain("*");
+			}catch (err:Error) {
+				
+			}
+			
 		}
 		
 		override public function start():void {

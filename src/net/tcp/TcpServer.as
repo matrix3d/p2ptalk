@@ -1,8 +1,10 @@
 package net.tcp 
 {
 	import flash.events.Event;
+	import flash.events.ProgressEvent;
 	import flash.events.ServerSocketConnectEvent;
 	import flash.net.ServerSocket;
+	import flash.net.Socket;
 	/**
 	 * ...
 	 * @author lizhi
@@ -12,13 +14,37 @@ package net.tcp
 		private static var serverSockets:Array = [];
 		private var serverSocket:ServerSocket = new ServerSocket;
 		private var users:Vector.<ServerUser> = new Vector.<ServerUser>;
+		private var crossDomainServerSocket:ServerSocket;
 		public var groups:Object = { };
+		private static const crossDomainXML:XML=<cross-domain-policy>
+		<allow-access-from domain="*" to-ports="*"/>
+												</cross-domain-policy>
 		public function TcpServer() 
 		{
 			serverSocket.bind(4444);
 			serverSocket.listen();
 			serverSocket.addEventListener(ServerSocketConnectEvent.CONNECT, serverSocket_connect);
 			serverSockets.push(serverSocket);
+			
+			crossDomainServerSocket = new ServerSocket;
+			serverSockets.push(crossDomainServerSocket);
+			crossDomainServerSocket.bind(843);
+			crossDomainServerSocket.listen();
+			crossDomainServerSocket.addEventListener(ServerSocketConnectEvent.CONNECT, crossDomainServerSocket_connect);
+		}
+		
+		private function crossDomainServerSocket_connect(e:ServerSocketConnectEvent):void 
+		{
+			e.socket.addEventListener(ProgressEvent.SOCKET_DATA, socket_socketData);
+		}
+		
+		private function socket_socketData(e:ProgressEvent):void 
+		{
+			var socket:Socket = e.currentTarget as Socket;
+			trace(socket.readMultiByte(socket.bytesAvailable,"utf-8"));
+			socket.writeMultiByte(crossDomainXML + "\r", "utf-8");
+			socket.flush();
+			socket.close();
 		}
 		
 		private function serverSocket_connect(e:ServerSocketConnectEvent):void 

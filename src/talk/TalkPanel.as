@@ -229,7 +229,7 @@ package talk {
 			this.user = user;
 			var date:Date = new Date(time);
 			if(code!=ChatTest.CODE_NAME)
-				addLine("<font color='#0000FF'>"+name+" "+ date.toLocaleTimeString()+" ping " + (ChatTest.time-time)+"</font>");
+				addLine("<font color='#0000FF'>"+name+" "+ date.toLocaleTimeString()+"</font>");
 			switch(code) {
 				case ChatTest.CODE_TXT:
 					addLine("<textformat indent='20'><font color='#000000'>"+data+"</font></textformat>");

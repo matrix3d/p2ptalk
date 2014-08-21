@@ -85,7 +85,7 @@ package talk {
 			new PushButton(vbox, 0, 0, "登陆",loginin);
 			isLan= new CheckBox(vbox, 0, 0, "lan");
 			isTcp = new CheckBox(vbox, 0, 0, "tcp");
-			serverIp = new InputText(vbox, 0, 0, "host");
+			serverIp = new InputText(vbox, 0, 0, "127.0.0.1");
 			serverPort = new InputText(vbox, 0, 0, "4444");
 			loginui.setSize(200, 200);
 			
