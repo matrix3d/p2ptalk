@@ -72,7 +72,7 @@
   </library>
   <!-- Class files to compile (other referenced classes will automatically be included) -->
   <compileTargets>
-    <compile path="src\talk\ChatTest.as" />
+    <compile path="src\test\TestHTTPLoader.as" />
   </compileTargets>
   <!-- Paths to exclude from the Project Explorer tree -->
   <hiddenPaths>
@@ -89,5 +89,8 @@
     <option testMovieCommand="bin\air\Run.bat" />
   </options>
   <!-- Plugin storage -->
-  <storage />
+  <storage>
+    <entry key="at_enabled"><![CDATA[0]]></entry>
+    <entry key="at_password"><![CDATA[]]></entry>
+  </storage>
 </project>
