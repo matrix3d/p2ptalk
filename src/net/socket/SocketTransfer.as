@@ -35,7 +35,6 @@ package net.socket
 				var cc:Socket = to as Socket;
 				if(cc){
 					cc.addEventListener(Event.CONNECT, to_connect);
-					cc.addEventListener
 				}
 			}
 		}
