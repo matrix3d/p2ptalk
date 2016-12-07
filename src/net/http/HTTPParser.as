@@ -5,6 +5,7 @@ package net.http
 	import flash.events.ProgressEvent;
 	import flash.net.Socket;
 	import flash.utils.ByteArray;
+	import flash.utils.IDataInput;
 	/**
 	 * ...
 	 * @author lizhi
@@ -24,13 +25,14 @@ package net.http
 		public function HTTPParser(socket:Socket) 
 		{
 			this.socket = socket;
-			socket.addEventListener(ProgressEvent.SOCKET_DATA, socket_socketData);
+			if (socket){
+				socket.addEventListener(ProgressEvent.SOCKET_DATA, socket_socketData);
+			}
 		}
 		
-		private function socket_socketData(e:ProgressEvent):void 
-		{
-			len += socket.bytesAvailable;
-			var d:String = socket.readUTFBytes(socket.bytesAvailable);
+		public function parser(input:IDataInput):void{
+			len += input.bytesAvailable;
+			var d:String = input.readUTFBytes(input.bytesAvailable);
 			var len:int = d.length;
 			for (var i:int = 0; i < len; i++ ){
 				var c:String = d.charAt(i);
@@ -43,7 +45,6 @@ package net.http
 					_n++;
 					if (_n > 1){
 						if(!headerOver){
-							//trace("header\n",header);
 							var by:ByteArray = new ByteArray;
 							by.writeUTFBytes(header);
 							headerOver = true;
@@ -59,6 +60,11 @@ package net.http
 			if ((hlen+clen)<=len){
 				contentOver = true;
 			}
+		}
+		
+		private function socket_socketData(e:ProgressEvent):void 
+		{
+			parser(socket);
 			dispatchEvent(new Event(Event.CHANGE));
 		}
 		

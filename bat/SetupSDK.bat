@@ -1,7 +1,7 @@
 :user_configuration
 
 :: Path to Flex SDK
-set FLEX_SDK=D:\sdks\apache-flex-sdk-4.12.0-bin
+set FLEX_SDK=D:\sdk\Apache Flex 4.15.0 FP20.0 AIR20.0 en_US
 
 
 :validation

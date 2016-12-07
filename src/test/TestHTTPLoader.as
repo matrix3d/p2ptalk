@@ -8,26 +8,26 @@ package test
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
 	import flash.events.Event;
+	import flash.events.ProgressEvent;
 	import flash.system.Security;
 	import flash.system.System;
 	import flash.text.TextField;
 	import net.event.HTTPEvent;
 	import net.http.HTTPHeaderLoader;
+	import net.http.HTTPLoader;
 	/**
 	 * ...
 	 * @author lizhi
 	 */
 	public class TestHTTPLoader extends Sprite
 	{
-		private var loader:HTTPHeaderLoader;
-		private var tf:TextField;
+		private var loader:HTTPLoader;
+		private var headerTF:TextField;
+		private var contentTF:TextField;
 		private var input:InputText;
 		
 		public function TestHTTPLoader() 
 		{
-			Security.allowDomain("*");
-			Security.allowInsecureDomain("*");
-			
 			stage.align = StageAlign.TOP_LEFT;
 			stage.scaleMode = StageScaleMode.NO_SCALE;
 			
@@ -37,25 +37,37 @@ package test
 			input.width = 600;
 			hbox.addChild(input);
 			new PushButton(hbox, 0, 0, "go", ongo);
-			tf = new TextField;
 			
-			tf.width = 800;
-			tf.height = 400;
-			vbox.addChild(tf);
+			headerTF = new TextField;
+			headerTF.width = 800;
+			headerTF.height = 200;
+			vbox.addChild(headerTF);
+			
+			contentTF = new TextField;
+			contentTF.width = 800;
+			contentTF.height = 300;
+			vbox.addChild(contentTF);
+			
 			ongo(null);
 		}
 		
 		private function ongo(e:Event):void 
 		{
 			
-			loader = new HTTPHeaderLoader();
+			loader = new HTTPLoader();
 			loader.addEventListener(HTTPEvent.HEADER_COMPLETE, loader_headerComplete);
+			loader.addEventListener(ProgressEvent.PROGRESS, loader_progress);
 			loader.load(input.text);
+		}
+		
+		private function loader_progress(e:ProgressEvent):void 
+		{
+			contentTF.text = loader.parser.content;
 		}
 		
 		private function loader_headerComplete(e:HTTPEvent):void 
 		{
-			tf.text=
+			headerTF.text=
 			(JSON.stringify(loader.parser.headerObj,null,4));
 		}
 	}

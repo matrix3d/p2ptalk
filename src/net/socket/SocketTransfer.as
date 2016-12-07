@@ -4,8 +4,10 @@ package net.socket
 	import flash.events.EventDispatcher;
 	import flash.events.IOErrorEvent;
 	import flash.events.ProgressEvent;
+	import flash.filesystem.FileStream;
 	import flash.net.Socket;
 	import flash.utils.ByteArray;
+	import flash.utils.IDataOutput;
 	/**
 	 * socket传输者，将一个socket数据完全传输给其它socket
 	 * @author lizhi
@@ -13,11 +15,11 @@ package net.socket
 	public class SocketTransfer extends EventDispatcher
 	{
 		private var from:Socket;
-		private var tos:Vector.<Socket>;
+		private var tos:Vector.<IDataOutput>;
 		private var tosPos:Vector.<int>;
 		private var log:Function;
 		public var bytes:ByteArray;
-		public function SocketTransfer(from:Socket,tos:Vector.<Socket>,log:Function=null) 
+		public function SocketTransfer(from:Socket,tos:Vector.<IDataOutput>,log:Function=null) 
 		{
 			this.log = log;
 			this.tos = tos;
@@ -29,8 +31,12 @@ package net.socket
 			from.addEventListener(IOErrorEvent.IO_ERROR, from_ioError);
 			from.addEventListener(Event.CLOSE, from_close);
 			from.addEventListener(Event.CONNECT, from_connect);
-			for each(var to:Socket in tos) {
-				to.addEventListener(Event.CONNECT, to_connect);
+			for each(var to:IDataOutput in tos) {
+				var cc:Socket = to as Socket;
+				if(cc){
+					cc.addEventListener(Event.CONNECT, to_connect);
+					cc.addEventListener
+				}
 			}
 		}
 		
@@ -63,12 +69,14 @@ package net.socket
 					bytes.writeByte(from.readByte());
 				}
 				for (var i:int = 0; i < tos.length;i++ ) {
-					var to:Socket = tos[i];
-					if (to.connected) {
+					var to:IDataOutput = tos[i];
+					var socket:Socket = to as Socket;
+					if (socket==null||socket.connected) {
 						var pos:int = tosPos[i];
 						to.writeBytes(bytes, pos, bytes.length - pos);
 						tosPos[i] = bytes.length;
-						to.flush();
+						if(socket)
+						socket.flush();
 					}
 				}
 				if (bytesAvailable) {
