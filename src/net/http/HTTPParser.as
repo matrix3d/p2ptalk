@@ -18,7 +18,7 @@ package net.http
 		public var contentOver:Boolean = false;
 		public var content:String = "";
 		private var _n:int = 0;
-		private var socket:Socket;
+		public var socket:Socket;
 		private var len:int = 0;
 		private var hlen:int;
 		private var clen:int;

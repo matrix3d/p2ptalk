@@ -9,7 +9,7 @@ package net.http
 		public var req:String;
 		public function HTTPRequest(url:URL) 
 		{
-			req = "GET " + url.abspath + " HTTP/1.1\nHost: " + url.host + ":" + url.port + "\n\n";
+			req = "GET " + url.abspath + " HTTP/1.1\r\nHost: " + url.host + ":" + url.port + "\r\n\r\n";
 		}
 		
 	}

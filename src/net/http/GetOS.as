@@ -6,6 +6,7 @@ package net.http
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.IOErrorEvent;
+	import flash.events.ServerSocketConnectEvent;
 	import flash.media.StageWebView;
 	import flash.net.ServerSocket;
 	//import flash.events.ServerSocketConnectEvent;
@@ -18,9 +19,9 @@ package net.http
 	public class GetOS extends EventDispatcher
 	{
 		public static var AndroidVersion:Number = 0;
-		private static var ss:Object;
+		private static var ss:ServerSocket;
 		private var headerOBj:Object;
-		private var sv:Object;
+		private var sv:StageWebView;
 		private var stage:Stage;
 		private var errorCounter:int = 0;
 		public function GetOS(stage:Stage) 
@@ -31,7 +32,7 @@ package net.http
 		public function start():void{
 			try{
 			ss =new ServerSocket //AIRUtils.newServerSocket();
-			ss.addEventListener("connect"/*ServerSocketConnectEvent.CONNECT*/, ss_connect);
+			ss.addEventListener(ServerSocketConnectEvent.CONNECT, ss_connect);
 			ss.addEventListener(Event.CLOSE, ss_close);
 			ss.bind(13249);
 			ss.listen();
@@ -77,7 +78,7 @@ package net.http
 				ss.close();
 				sv.stage = null;
 				AndroidVersion = androidVersion;
-				Log.warn(p.header);
+				Log.warn(p.header.replace(/\r/g,""));
 				dispatchEvent(new Event(Event.COMPLETE));
 			}
 		}

@@ -26,7 +26,11 @@ package net.p2p
 				conn = new NetConnection;
 				conn.addEventListener(NetStatusEvent.NET_STATUS, netStatus);
 			}
+			try{
 			conn.connect(connCommand);
+			}catch (err:Error){
+				trace(err);
+			}
 		}
 		
 		override public function stop():void {

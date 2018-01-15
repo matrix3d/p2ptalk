@@ -4,7 +4,6 @@ package net.p2p
 	import flash.net.NetGroup;
 	import net.Group;
 	import net.NetUser;
-	import talk.User;
 	/**
 	 * ...
 	 * @author lizhi
