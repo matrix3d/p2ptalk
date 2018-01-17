@@ -1,5 +1,6 @@
 package net.http 
 {
+	import flash.utils.ByteArray;
 	import flash.utils.IDataInput;
 	import flash.utils.IDataOutput;
 	/**
@@ -21,8 +22,11 @@ package net.http
 				"HTTP/1.1 " + status + "\r\n" +
 				"Server: lzair\r\n" +
 				"Date: " + new Date() + "\r\n" +
-				"Content-type: " + type+"\r\n" +
-				"Content-length: " + len + "\r\n" +
+				"Content-Type: " + type+"\r\n" +
+				//"transfer-encoding: " + "chunked"+"\r\n" +
+				//"Accept-Ranges :" + "bytes"+"\r\n" +
+				//"Connection: " + "keep-alive"+"\r\n" +
+				"Content-Length: " + len + "\r\n" +
 				"\r\n"
 			);
 		}
@@ -34,8 +38,10 @@ package net.http
 			}
 		}
 		
-		public function writeTxt(data:String,status:int,type:String):void{
-			writeHead(status, type, data.length);
+		public function writeTxt(data:String, status:int, type:String):void{
+			var byte:ByteArray = new ByteArray;
+			byte.writeUTFBytes(data);
+			writeHead(status, type, byte.length);
 			output.writeUTFBytes(data);
 		}
 	}

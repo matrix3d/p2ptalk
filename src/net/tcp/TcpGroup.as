@@ -25,7 +25,10 @@ package net.tcp
 			tcpSender.sendObject(createMsg(user,data));
 		}
 		
-		public function createMsg(user:NetUser,data:Object):Object {
+		public function createMsg(user:NetUser, data:Object):Object {
+			if (user==null){
+				return TcpConnecter.createMsg(data, TcpConnecter.SERVER_MESSAGE, name, 0);
+			}
 			return TcpConnecter.createMsg(data, TcpConnecter.MESSAGE, name, int(user.id));
 		}
 		

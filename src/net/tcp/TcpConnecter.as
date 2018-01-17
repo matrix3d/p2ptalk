@@ -17,13 +17,14 @@ package net.tcp
 		public static const ADD_USER:int = 2;
 		public static const REMOVE_USER:int = 3;
 		public static const MESSAGE:int = 4;
+		public static const SERVER_MESSAGE:int = 5;
 		
 		private var host:String;
 		private var port:int;
 		private var socket:Socket;
-		private var sender:TcpMsgSender
-		private var reader:TcpMsgReader
-		private var readerCalbak:TcpReaderCalbak
+		private var sender:TcpMsgSender;
+		private var reader:TcpMsgReader;
+		private var readerCalbak:TcpReaderCalbak;
 		public function TcpConnecter(host:String,port:int) 
 		{
 			this.port = port;

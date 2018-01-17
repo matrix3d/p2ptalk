@@ -17,8 +17,7 @@ package net.http
 					var value:String = i ==-1?"":line.substr(i + 2);
 					if (i==-1&&line.indexOf("GET ")==0){
 						var arr:Array = line.split(" ");
-						key = arr[0];
-						value = arr[1];
+						obj[arr[0]] = arr[1];
 					}
 					obj[key] = value;
 				}

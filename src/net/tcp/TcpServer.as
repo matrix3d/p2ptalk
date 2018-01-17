@@ -13,15 +13,17 @@ package net.tcp
 	{
 		private static var serverSockets:Array = [];
 		private var serverSocket:ServerSocket = new ServerSocket;
-		private var users:Vector.<ServerUser> = new Vector.<ServerUser>;
+		public var users:Vector.<ServerUser> = new Vector.<ServerUser>;
 		private var crossDomainServerSocket:ServerSocket;
 		public var groups:Object = { };
 		private static const crossDomainXML:XML=<cross-domain-policy>
 		<allow-access-from domain="*" to-ports="*"/>
-												</cross-domain-policy>
-		public function TcpServer() 
+												</cross-domain-policy>;
+		private var calbak:TcpServerReaderCalbak;
+		public function TcpServer(port:int,calbak:TcpServerReaderCalbak=null) 
 		{
-			serverSocket.bind(4444);
+			this.calbak = calbak;
+			serverSocket.bind(port);
 			serverSocket.listen();
 			serverSocket.addEventListener(ServerSocketConnectEvent.CONNECT, serverSocket_connect);
 			serverSockets.push(serverSocket);
@@ -55,7 +57,7 @@ package net.tcp
 			user.sender = new TcpMsgSender(e.socket);
 			user.socket = e.socket;
 			user.listenerSocketClose();
-			var calbak:TcpServerReaderCalbak = new TcpServerReaderCalbak;
+			var calbak:TcpServerReaderCalbak = this.calbak||new TcpServerReaderCalbak;
 			calbak.user = user;
 			calbak.server = this;
 			user.render = new TcpMsgReader(e.socket, calbak);
@@ -102,57 +104,17 @@ package net.tcp
 		public function sendTo(data:Object,userId:int,groupName:String,user:ServerUser):void {
 			var suser:ServerUser = getUser(userId);
 			if (suser) {
-				suser.sender.sendObject(TcpConnecter.createMsg(data, TcpConnecter.MESSAGE, groupName, user.id));
+				suser.sender.sendObject(TcpConnecter.createMsg(data, TcpConnecter.MESSAGE, groupName, user?user.id:0));
+			}
+		}
+		public function post(data:Object,groupName:String,user:ServerUser):void {
+			for each(var suser:ServerUser in users){
+				sendTo(data, suser.id, groupName, user);
 			}
 		}
 	}
 
 }
 
-import flash.events.Event;
-import flash.events.EventDispatcher;
-import flash.net.Socket;
-import net.tcp.TcpReaderCalbak
-import net.tcp.TcpServer;
-import net.tcp.TcpConnecter;
-import net.tcp.TcpMsgSender;
-import net.tcp.TcpMsgReader;
-class TcpServerReaderCalbak extends TcpReaderCalbak {
-	public var user:ServerUser;
-	public var server:TcpServer;
-	public function TcpServerReaderCalbak() {
-		super(null);
-	}
-	override public function calbak(msg:Object):void 
-	{
-		var data:Object = msg[0];
-		var type:int = msg[1];
-		var groupName:String = msg[2];
-		var userId:int = msg[3];
-		switch(type) {
-			case TcpConnecter.CREAT_GROUP:
-				server.createGroup(groupName,user);
-				break;
-			case TcpConnecter.MESSAGE:
-				server.sendTo(data, userId,groupName, user);
-				break;
-		}
-	}
-	
-}
 
-class ServerUser extends EventDispatcher{
-	public static var ID:int = 0;
-	public var id:int;
-	public var socket:Socket;
-	public var sender:TcpMsgSender;
-	public var render:TcpMsgReader;
-	public function listenerSocketClose():void {
-		socket.addEventListener(Event.CLOSE, socket_close);
-	}
-	
-	private function socket_close(e:Event):void 
-	{
-		dispatchEvent(e);
-	}
-}
+

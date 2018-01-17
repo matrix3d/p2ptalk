@@ -20,7 +20,7 @@ package net.http
 	{
 		private static var servermap:Array = [];
 		private var ss:ServerSocket;
-		private var webroot:File;
+		public var webroot:File;
 		public var mimeTypes:Object = {};
 		private var fs2Response:Dictionary = new Dictionary;
 		public function HTTPServer() 
@@ -69,6 +69,7 @@ package net.http
 				var response:HTTPResponse = new HTTPResponse(p.socket);
 				var path:String = p.headerObj.GET;
 				if (path != null){
+					path = decodeURIComponent(path);
 					var li:int = path.indexOf("?");
 					if (li!=-1){
 						path = path.substring(0, li);
@@ -85,20 +86,43 @@ package net.http
 					}
 					var file:File = webroot.resolvePath(path.substr(1));
 					if (file.exists&&file.isDirectory){
-						file = file.resolvePath("index.html");
-						ext = ".html";
+						var indexfile:File = file.resolvePath("index.html");
+						if (indexfile.exists){
+							file = indexfile;
+							ext = ".html";
+						}
 					}
-					if (file.exists&&!file.isDirectory){
-						var type:String = mimeTypes[ext] || mimeTypes[".*"];
-						response.writeHead(200, type, file.size);
-						p.socket.flush();
-						
-						var fs:FileStream = new FileStream;
-						fs.addEventListener(IOErrorEvent.IO_ERROR, fs_ioError);
-						fs.addEventListener(Event.COMPLETE, fs_complete);
-						fs.addEventListener(ProgressEvent.PROGRESS, fs_progress);
-						fs2Response[fs] = response
-						fs.openAsync(file, FileMode.READ);
+					if (file.exists){
+						if(!file.isDirectory){
+							var type:String = mimeTypes[ext] || mimeTypes[".*"];
+							response.writeHead(200, type, file.size);
+							p.socket.flush();
+							
+							var fs:FileStream = new FileStream;
+							fs.addEventListener(IOErrorEvent.IO_ERROR, fs_ioError);
+							fs.addEventListener(Event.COMPLETE, fs_complete);
+							fs.addEventListener(ProgressEvent.PROGRESS, fs_progress);
+							fs2Response[fs] = response
+							fs.openAsync(file, FileMode.READ);
+						}else{
+							var html:String = 
+							"<!DOCTYPE html>"+
+							"<html lang=\"en\">"+
+							"<head>"+
+								"<meta charset=\"utf-8\">"+
+								"<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">"+
+								"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\">"+
+							"</head>" +
+							"<body>";	
+							for each(var sf:File in file.getDirectoryListing()){
+								html+="<a href='"+path+"/"+sf.name+"'>"+sf.name+"</a><br/>"
+							}
+							html+="</body>"+
+							"</html>";
+							response.writeTxt(html, 200, "text/html;");
+							p.socket.flush();
+							p.socket.close();
+						}
 					}else{
 						response.writeTxt("404", 404, "text/html;");
 						p.socket.flush();
@@ -114,9 +138,10 @@ package net.http
 		
 		private function fs_progress(e:Event):void 
 		{
-			var fs:FileStream = e.currentTarget as FileStream;
-			var response:HTTPResponse = fs2Response[fs] as HTTPResponse;
-			//while (fs.bytesAvailable){
+			//var fs:FileStream = e.currentTarget as FileStream;
+			//var response:HTTPResponse = fs2Response[fs] as HTTPResponse;
+			//if (fs.bytesAvailable){
+			//response.output.writeInt(fs.bytesAvailable);
 			//var newbyte:ByteArray = new ByteArray;
 			//fs.readBytes(newbyte, 0, fs.bytesAvailable);
 			//response.output.writeBytes(newbyte,0,newbyte.length);// .writeByte(fs.readByte());
@@ -130,9 +155,11 @@ package net.http
 			var fs:FileStream = e.currentTarget as FileStream;
 			var response:HTTPResponse = fs2Response[fs] as HTTPResponse;
 			
+			//if()
 			var newbyte:ByteArray = new ByteArray;
 			fs.readBytes(newbyte, 0, fs.bytesAvailable);
 			response.output.writeBytes(newbyte,0,newbyte.length);// .writeByte(fs.readByte());
+			//response.output.writeInt(0);
 			
 			(response.output as Socket).flush();
 			(response.output as Socket).close();
