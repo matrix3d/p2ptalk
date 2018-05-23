@@ -1,6 +1,7 @@
 package net.tcp 
 {
 	import flash.events.Event;
+	import flash.events.EventDispatcher;
 	import flash.events.ProgressEvent;
 	import flash.events.ServerSocketConnectEvent;
 	import flash.net.ServerSocket;
@@ -9,7 +10,7 @@ package net.tcp
 	 * ...
 	 * @author lizhi
 	 */
-	public class TcpServer
+	public class TcpServer extends EventDispatcher
 	{
 		private static var serverSockets:Array = [];
 		private var serverSocket:ServerSocket = new ServerSocket;
@@ -23,16 +24,30 @@ package net.tcp
 		public function TcpServer(port:int,calbak:TcpServerReaderCalbak=null) 
 		{
 			this.calbak = calbak;
+			try{
 			serverSocket.bind(port);
 			serverSocket.listen();
+			}catch (err:Error){
+				trace(err.getStackTrace());
+			}
 			serverSocket.addEventListener(ServerSocketConnectEvent.CONNECT, serverSocket_connect);
+			serverSocket.addEventListener(Event.CLOSE, serverSocket_close);
 			serverSockets.push(serverSocket);
 			
 			crossDomainServerSocket = new ServerSocket;
 			serverSockets.push(crossDomainServerSocket);
+			try{
 			crossDomainServerSocket.bind(843);
 			crossDomainServerSocket.listen();
+			}catch (err:Error){
+				trace(err.getStackTrace());
+			}
 			crossDomainServerSocket.addEventListener(ServerSocketConnectEvent.CONNECT, crossDomainServerSocket_connect);
+		}
+		
+		private function serverSocket_close(e:Event):void 
+		{
+			dispatchEvent(e);
 		}
 		
 		private function crossDomainServerSocket_connect(e:ServerSocketConnectEvent):void 

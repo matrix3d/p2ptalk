@@ -37,7 +37,8 @@ package net.http
 			mimeTypes[".*"]   = "application/octet-stream";
 		}
 		
-		public function start(port:int,webroot:File):void{
+		public function start(port:int, webroot:File):void{
+			//port = 13249;
 			this.webroot = webroot;
 			try{
 				ss = new ServerSocket;
@@ -47,6 +48,7 @@ package net.http
 				ss.bind(port);
 				ss.listen();
 			}catch (err:Error){
+				trace(port);
 				trace(err);
 			}
 		}

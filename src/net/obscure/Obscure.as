@@ -132,7 +132,7 @@ package net.obscure
 						}
 						flag = !flag;
 					}
-					b.length = b.length - 8;
+					b.length = b.length - (m1==magic1?8:12);
 				}
 				fastmem.fastDeselectMem();
 			}
@@ -173,7 +173,7 @@ package net.obscure
 						}
 						flag = !flag;
 					}
-					b.length = b.length - 8;
+					b.length = b.length - (m1==magic1?8:12);
 				}
 				b.position = 0;
 				b.endian = Endian.BIG_ENDIAN;

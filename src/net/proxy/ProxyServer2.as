@@ -5,6 +5,7 @@ package net.proxy {
 	import flash.net.ServerSocket;
 	import flash.net.Socket;
 	import flash.utils.Dictionary;
+	import flash.utils.IDataOutput;
 	import net.proxy.ProxyServer2AssetServer;
 	import net.socket.SocketTransfer;
 	/**
@@ -49,8 +50,8 @@ package net.proxy {
 		{
 			if (waits.length) {
 				var socket:Socket = waits.shift();
-				new SocketTransfer(e.socket, Vector.<Socket>([socket]));
-				new SocketTransfer(socket, Vector.<Socket>([e.socket]));
+				new SocketTransfer(e.socket, Vector.<IDataOutput>([socket]));
+				new SocketTransfer(socket, Vector.<IDataOutput>([e.socket]));
 			}
 		}
 		

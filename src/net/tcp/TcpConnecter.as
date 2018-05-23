@@ -44,9 +44,21 @@ package net.tcp
 				socket = new Socket;
 				reader = new TcpMsgReader(socket, readerCalbak);
 				sender = new TcpMsgSender(socket);
+				socket.addEventListener(IOErrorEvent.IO_ERROR, socket_ioError);
+				socket.addEventListener(Event.CLOSE, socket_close);
 				socket.addEventListener(Event.CONNECT, socket_connect);
 			}
 			socket.connect(host, port);
+		}
+		
+		private function socket_close(e:Event):void 
+		{
+			dispatchEvent(e);
+		}
+		
+		private function socket_ioError(e:IOErrorEvent):void 
+		{
+			dispatchEvent(e);
 		}
 		
 		override public function createGroupByName(name:String):Group {

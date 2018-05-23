@@ -51,7 +51,11 @@ package net.tcp
 				if (socket.bytesAvailable >= waitLength)
 				{
 					var data:Object = socket.readObject();
-					calbak.calbak(data);
+					try{
+						calbak.calbak(data);
+					}catch (err:Error){
+						trace(err.getStackTrace());
+					}
 					waitLength = -1;
 					read();
 				}
